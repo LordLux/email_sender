@@ -8,17 +8,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' as mat;
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:syncfusion_flutter_xlsio/xlsio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:email_validator/email_validator.dart';
 import 'package:recase/recase.dart';
 
 import '../functions.dart';
 import '../main.dart';
 import '../manager.dart';
-import '../theme.dart';
 import '../widgets/card_highlight.dart';
 import '../widgets/page.dart';
 
@@ -29,11 +24,12 @@ class ExcelScreen extends StatefulWidget {
   State<ExcelScreen> createState() => _ExcelScreenState();
 }
 
+final excelKey = GlobalKey<_ExcelScreenState>();
+
 class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
-  bool selected = true;
-  String? comboboxValue;
   List<Ufficio>? data;
   bool noFile = true;
+  bool openingPickDialog = false;
   FlyoutController renameFlyoutController = FlyoutController();
   TextEditingController renameController = TextEditingController();
 
@@ -47,22 +43,18 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     if (currentUfficioIndex < Manager.uffici.length - 1) setState(() => currentUfficioIndex++);
   }
 
-  void copyMailToClipBoard(String text) {
-    print("Copying mail to clipboard: '$text'");
-    Clipboard.setData(ClipboardData(text: text));
-    mat.ScaffoldMessenger.of(context).showSnackBar(const mat.SnackBar(content: Text('Mail copiata negli appunti')));
-  }
-
   //
 
   Future<void> pickExcelFile() async {
+    if (openingPickDialog) return;
+    openingPickDialog = true;
     Manager.excelPath = (await FilePicker.platform.pickFiles(
           allowMultiple: false,
           allowedExtensions: ['xlsx', 'xls', 'csv'],
           lockParentWindow: true,
           type: FileType.custom,
           dialogTitle: "Seleziona il file Excel",
-          initialDirectory: Manager.excelPath != null ? removeFileNameFromPath(Manager.excelPath!) : (await getApplicationDocumentsDirectory()).path,
+          initialDirectory: (Manager.excelPath != null && Manager.excelPath!.isNotEmpty) ? removeFileNameFromPath(Manager.excelPath!) : (await getApplicationDocumentsDirectory()).path,
         ))
             ?.files[0]
             .path ??
@@ -70,7 +62,8 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     SettingsManager.saveSettings({"excelPath": Manager.excelPath});
     if (kDebugMode) print('Manager.excelPath: ${Manager.excelPath}');
 
-    _loadData();
+    await loadData();
+    openingPickDialog = false;
   }
 
   Future<void> rename(String name) async {
@@ -85,7 +78,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     await file.rename(newPath);
     Manager.excelPath = newPath;
     SettingsManager.saveSettings({"excelPath": Manager.excelPath});
-    _loadData();
+    loadData();
   }
 
   Future<void> reloadData() async {
@@ -94,7 +87,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     setState(() {});
   }
 
-  Future<void> _loadData() async {
+  Future<void> loadData() async {
     data = null;
     if (Manager.excelPath == null) {
       setState(() => noFile = true);
@@ -119,13 +112,12 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
-    final appTheme = context.watch<AppTheme>();
 
     return ScaffoldPage.scrollable(
       header: const PageHeader(title: Text('Excel')),
@@ -134,7 +126,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
         if (noFile)
           CardHighlight(
             child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              const Text('Nessun file selezionato'),
+              const Text('Nessun file Excel selezionato'),
               FilledButton(
                 onPressed: pickExcelFile,
                 child: const Text('Seleziona file'),
@@ -219,7 +211,13 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                   currentUfficioIndex != 0
                       ? FilledButton(
                           onPressed: () => goToPreviousPage(),
-                          child: const Text('Pagina Precedente'),
+                          child: const Row(
+                            children: [
+                              Icon(mat.Icons.keyboard_arrow_left_outlined, size: 15),
+                              SizedBox(width: 6),
+                              Text('Pagina Precedente'),
+                            ],
+                          ),
                         )
                       : const SizedBox(width: 138),
                   const SizedBox(width: 20),
@@ -228,7 +226,14 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                   currentUfficioIndex != Manager.uffici.length - 1
                       ? FilledButton(
                           onPressed: () => goToNextPage(),
-                          child: const Text('Pagina Successiva'),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Pagina Successiva'),
+                              SizedBox(width: 6),
+                              Icon(mat.Icons.keyboard_arrow_right_outlined, size: 15),
+                            ],
+                          ),
                         )
                       : const SizedBox(width: 135),
                 ],
@@ -242,32 +247,36 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
             //print('refreshed: currentUfficioIndex: $currentUfficioIndex');
             final Ufficio ufficio = Manager.uffici[currentUfficioIndex];
             return Card(
-              child: Center(
-                child: Wrap(alignment: WrapAlignment.center, 
-                crossAxisAlignment: WrapCrossAlignment.center,
-                direction: Axis.vertical,
-                spacing: 10.0, children: [
-                  Center(child: Text('Ufficio: ${ufficio.nome.titleCase}', style: FluentTheme.of(context).typography.subtitle!)),
-                  if (Manager.uffici.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4.0),
-                      child: mat.DataTable(
-                        columnSpacing: 140,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4.0),
+                clipBehavior: Clip.antiAlias,
+                child: Center(
+                  child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, direction: Axis.vertical, spacing: 10.0, children: [
+                    spacer,
+                    Center(child: Text('Ufficio: ${ufficio.nome.titleCase}', style: FluentTheme.of(context).typography.subtitle!)),
+                    spacer,
+                    if (Manager.uffici.isNotEmpty)
+                      mat.DataTable(
+                        columnSpacing: 10,
                         columns: List<mat.DataColumn>.generate(
                           ufficio.headers.length,
                           (index) {
-                            final isMailColumn = ufficio.headers[index].toLowerCase() == "mail";
+                            double? width;
+                            switch (ufficio.headers[index].toLowerCase()) {
+                              case 'mail':
+                                width = 300;
+                                break;
+                              case 'comune':
+                                width = 150;
+                                break;
+                              case 'nome':
+                                width = 250;
+                                break;
+                            }
                             return mat.DataColumn(
-                              label: Listener(
-                                onPointerDown: (PointerDownEvent event) {
-                                  if (event.kind == PointerDeviceKind.mouse && event.buttons == kSecondaryMouseButton) {
-                                    copyMailToClipBoard(ufficio.headers[index]);
-                                  }
-                                },
-                                child: SizedBox(
-                                  width: isMailColumn ? 300 : null,
-                                  child: Text(ufficio.headers[index], style: FluentTheme.of(context).typography.subtitle!),
-                                ),
+                              label: SizedBox(
+                                width: width,
+                                child: Text(ufficio.headers[index], style: FluentTheme.of(context).typography.subtitle!),
                               ),
                             );
                           },
@@ -275,20 +284,31 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                         rows: List<mat.DataRow>.generate(
                           ufficio.entries.length,
                           (index) => mat.DataRow(
-                            cells: List<mat.DataCell>.generate(
-                              ufficio.entries[index].length,
-                              (i) => mat.DataCell(
+                            cells: List<mat.DataCell>.generate(ufficio.entries[index].length, (i) {
+                              double? width;
+                              switch (ufficio.entries[index][i].toLowerCase()) {
+                                case 'mail':
+                                  width = 300;
+                                  break;
+                                case 'comune':
+                                  width = 150;
+                                  break;
+                                case 'nome':
+                                  width = 250;
+                                  break;
+                              }
+                              return mat.DataCell(
                                 SizedBox(
-                                  width: ufficio.headers[i].toLowerCase() == "mail" ? 300 : null,
+                                  width: width,
                                   child: Text(ufficio.entries[index][i]),
                                 ),
-                              ),
-                            ),
+                              );
+                            }),
                           ),
                         ),
                       ),
-                    ),
-                ]),
+                  ]),
+                ),
               ),
             );
           }),

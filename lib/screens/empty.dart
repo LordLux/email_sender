@@ -11,8 +11,6 @@ class Empty extends StatefulWidget {
 }
 
 class _EmptyState extends State<Empty> with PageMixin {
-  bool selected = true;
-  String? comboboxValue;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +18,7 @@ class _EmptyState extends State<Empty> with PageMixin {
 
     return ScaffoldPage.scrollable(
       header: const PageHeader(title: Text('Excel')),
-      children: [
+      children: const [
         Card(
           child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, children: []),
         ),

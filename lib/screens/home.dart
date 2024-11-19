@@ -13,7 +13,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with PageMixin {
-  bool selected = true;
   bool needsToRestart = false;
 
   @override

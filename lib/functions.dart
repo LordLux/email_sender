@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-String removeFileNameFromPath(String path) => path.substring(0, path.lastIndexOf('\\'));
+String removeFileNameFromPath(String path) => path.length > path.lastIndexOf('\\') ? path.substring(0, path.lastIndexOf('\\')) : "/";
 
-String getFileNameFromPath(String path) => path.substring(path.lastIndexOf('\\') + 1);
+String getFileNameFromPath(String path) => path.length > path.lastIndexOf('\\') +1 ?path.substring(path.lastIndexOf('\\') + 1) : "/";
 
 Size measureTextSize({
   required String text,

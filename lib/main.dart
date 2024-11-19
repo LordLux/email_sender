@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:email_sender/screens/gruppi.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide Page;
 import 'package:flutter/foundation.dart';
 import 'package:system_theme/system_theme.dart';
@@ -157,6 +158,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       key: const ValueKey('/excel'),
       icon: const Icon(FluentIcons.excel_document),
       title: const Text('Excel'),
+      body: const SizedBox.shrink(),
+    ),
+    PaneItem(
+      key: const ValueKey('/gruppi'),
+      icon: const Icon(FluentIcons.people),
+      title: const Text('Gruppi'),
       body: const SizedBox.shrink(),
     ),
     PaneItem(
@@ -465,6 +472,7 @@ class WindowButtons extends StatelessWidget {
   }
 }
 
+
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
@@ -484,7 +492,10 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
       GoRoute(path: '/settings', builder: (context, state) => const Settings()),
 
       /// Excel
-      GoRoute(path: '/excel', builder: (context, state) => const ExcelScreen()),
+      GoRoute(path: '/excel', builder: (context, state) => ExcelScreen(key: excelKey)),
+      
+      // Gruppi
+      GoRoute(path: '/gruppi', builder: (context, state) => const MailingLists()),
 
       //Email
       GoRoute(path: '/email', builder: (context, state) => const Email()),
