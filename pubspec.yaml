@@ -24,6 +24,8 @@ dependencies:
   path_provider: ^2.1.5
   flutter_syntax_view: ^4.1.0
   google_fonts: ^6.2.1
+  syncfusion_flutter_datagrid: ^27.2.2
+  email_validator: ^3.0.0
 
 dev_dependencies:
   flutter_test:

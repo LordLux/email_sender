@@ -5,70 +5,87 @@ import 'package:email_sender/theme.dart';
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'classes.dart';
 
 class Manager {
   static String? excelPath;
   static int lastExcelSheetIndex = 0;
+  static List<Ufficio> uffici = [];
+  static List<String> ufficiNames = [];
 
-  static Future<List<Map<String, String>>> loadExcelData(File file) async {
-    final List<Map<String, String>> extractedData = [];
-    int page = lastExcelSheetIndex;
+  static Future<void> loadExcel() async {
+    uffici.clear(); // Clear the existing uffici list
+    ufficiNames.clear(); // Clear the existing ufficiNames list
 
-    // Open the Excel file as a stream
+    File file = File(Manager.excelPath!);
     final bytes = await file.readAsBytes();
     final Excel excel = Excel.decodeBytes(bytes);
-    final Sheet? sheet = excel.sheets[excel.sheets.keys.toList()[page]];
-
-    if (sheet == null) {
-      print('Sheet not found');
-      return extractedData;
+    
+    for (int i = 0; i < excel.sheets.keys.length; i++) {
+      final Ufficio? ufficio = await loadExcelSheet(file, i);
+      if (ufficio != null) {
+        uffici.add(ufficio);
+        ufficiNames.add(ufficio.nome);
+      }
     }
+  }
 
-    // Get the used range (rows and columns with data)
-    final int totalRows = sheet.maxRows;
-    final int totalColumns = sheet.maxCols;
+  static Future<Ufficio?> loadExcelSheet(File file, int sheetIndex) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final Excel excel = Excel.decodeBytes(bytes);
 
-    // Identify the columns for Name, Mail, and Extra (assuming they are in the first row)
-    int nameCol = -1;
-    int mailCol = -1;
-    int extraCol = -1;
+      // Get the sheet by index
+      final Sheet? sheet = excel.sheets[excel.sheets.keys.toList()[sheetIndex]];
+      if (sheet == null) {
+        if (kDebugMode) print('Sheet not found');
+        return null;
+      }
 
-    for (int col = 1; col <= totalColumns; col++) {
-      final cellValue = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col - 1, rowIndex: 0)).value.toString().trim().toLowerCase();
-      if (cellValue == 'name') nameCol = col;
-      if (cellValue == 'mail') mailCol = col;
-      if (cellValue == 'extra') extraCol = col;
+      // Read headers from the first row
+      final List<String> headers = [];
+      final int totalColumns = sheet.maxCols;
+      for (int col = 0; col < totalColumns; col++) {
+        final cellValue = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0)).value;
+        if (cellValue == null || cellValue.toString().trim().isEmpty) break;
+        headers.add(cellValue.toString().trim());
+      }
+
+      // Collect all rows data
+      final List<List<String>> entries = [];
+      final int totalRows = sheet.maxRows;
+      for (int row = 1; row < totalRows; row++) {
+        final List<String> rowData = [];
+        for (int col = 0; col < headers.length; col++) {
+          final cellValue = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row)).value;
+          rowData.add(cellValue?.toString().trim() ?? '');
+        }
+        entries.add(rowData);
+      }
+
+      // Create the Ufficio object
+      final ufficio = Ufficio(
+        nome: excel.sheets.keys.toList()[sheetIndex],
+        headers: headers,
+        entries: entries,
+      );
+
+      return ufficio;
+    } catch (e) {
+      if (kDebugMode) print('Error while loading Excel sheet: $e');
+      return null;
     }
-
-    if (nameCol == -1 || mailCol == -1 || extraCol == -1) {
-      print('Required columns not found');
-      return extractedData;
-    }
-
-    // Extract data from rows
-    for (int row = 2; row <= totalRows; row++) {
-      final String name = sheet.cell(CellIndex.indexByColumnRow(columnIndex: nameCol - 1, rowIndex: row - 1)).value.toString();
-      final String mail = sheet.cell(CellIndex.indexByColumnRow(columnIndex: mailCol - 1, rowIndex: row - 1)).value.toString();
-      final String extra = sheet.cell(CellIndex.indexByColumnRow(columnIndex: extraCol - 1, rowIndex: row - 1)).value.toString();
-
-      extractedData.add({
-        'Name': name,
-        'Mail': mail,
-        'Extra': extra,
-      });
-    }
-
-    return extractedData;
   }
 
   static Future<void> pickExcelFile() async {
     final result = await FilePicker.platform.pickFiles();
     if (result != null) {
       final file = File(result.files.single.path!);
-      if (file.existsSync()) loadExcelData(file);
+      if (file.existsSync()) loadExcel();
     }
   }
 }
@@ -133,7 +150,7 @@ class SettingsManager {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setStringList('settings', []);
     settings = {};
-    
+
     Manager.excelPath = null;
   }
 }

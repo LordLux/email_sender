@@ -19,13 +19,15 @@ class _HomePageState extends State<HomePage> with PageMixin {
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
-
+    //daniele.mason@maggioli.it]
+    
+    //
     return ScaffoldPage.scrollable(
       header: PageHeader(
         title: const Text('Email Sender'),
         commandBar: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
           Link(
-            uri: Uri.parse('https://maito:lordlux.dev@gmail.com'),
+            uri: Uri.parse('maito:lordlux.dev@gmail.com'),
             builder: (context, open) => Semantics(
               link: true,
               child: Tooltip(

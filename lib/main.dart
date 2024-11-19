@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:go_router/go_router.dart';
 
 import 'manager.dart';
+import 'screens/email.dart';
 import 'screens/excel.dart';
 import 'screens/home.dart';
 import 'screens/settings.dart';
@@ -39,7 +40,7 @@ void main() async {
         TitleBarStyle.hidden,
         windowButtonVisibility: false,
       );
-      await windowManager.setMinimumSize(const Size(500, 600));
+      await windowManager.setMinimumSize(const Size(850, 400));
       await windowManager.show();
       await windowManager.setPreventClose(true);
       await windowManager.setSkipTaskbar(false);
@@ -55,7 +56,7 @@ void main() async {
 
 Future<void> loadDefaultExcelFile() async {
   final file = File(Manager.excelPath!);
-  if (file.existsSync()) Manager.loadExcelData(file);
+  if (file.existsSync()) Manager.loadExcel();
 }
 
 bool get isDesktop {
@@ -156,6 +157,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       key: const ValueKey('/excel'),
       icon: const Icon(FluentIcons.excel_document),
       title: const Text('Excel'),
+      body: const SizedBox.shrink(),
+    ),
+    PaneItem(
+      key: const ValueKey('/email'),
+      icon: const Icon(FluentIcons.mail),
+      title: const Text('Email'),
       body: const SizedBox.shrink(),
     ),
   ].map<NavigationPaneItem>((e) {
@@ -305,8 +312,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             ),
           );
         }(),
-        actions: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          Align(
+        actions: const Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          /*Align(
             alignment: AlignmentDirectional.centerEnd,
             child: Padding(
               padding: const EdgeInsetsDirectional.only(end: 8.0),
@@ -314,6 +321,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                 content: const Text('Tema Scuro'),
                 checked: FluentTheme.of(context).brightness.isDark,
                 onChanged: (v) {
+                  if (appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled) return;
+
                   if (v) {
                     appTheme.mode = ThemeMode.dark;
                   } else {
@@ -322,8 +331,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                 },
               ),
             ),
-          ),
-          if (!kIsWeb) const WindowButtons(),
+          ),*/
+          if (!kIsWeb) WindowButtons(),
         ]),
       ),
       paneBodyBuilder: (item, child) {
@@ -476,6 +485,9 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
 
       /// Excel
       GoRoute(path: '/excel', builder: (context, state) => const ExcelScreen()),
+
+      //Email
+      GoRoute(path: '/email', builder: (context, state) => const Email()),
     ],
   ),
 ]);

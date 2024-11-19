@@ -39,12 +39,12 @@ const _LinuxWindowEffects = [
 
 const _WindowsWindowEffects = [
   WindowEffect.disabled,
-  WindowEffect.solid,
+  //WindowEffect.solid,
   WindowEffect.transparent,
   WindowEffect.aero,
   WindowEffect.acrylic,
-  WindowEffect.mica,
-  WindowEffect.tabbed,
+  //WindowEffect.mica,
+  //WindowEffect.tabbed,
 ];
 
 const _MacosWindowEffects = [
@@ -97,7 +97,7 @@ class _SettingsState extends State<Settings> with PageMixin {
     return ScaffoldPage.scrollable(
       header: const PageHeader(title: Text('Impostazioni')),
       children: [
-        Text('Tema', style: FluentTheme.of(context).typography.subtitle),
+        /*Text('Tema', style: FluentTheme.of(context).typography.subtitle),
         spacer,
         ...List.generate(ThemeMode.values.length, (index) {
           final mode = ThemeMode.values[index];
@@ -108,11 +108,13 @@ class _SettingsState extends State<Settings> with PageMixin {
               onChanged: (value) {
                 if (value) {
                   appTheme.mode = mode;
-
-                  if (kIsWindowEffectsSupported) {
-                    // some window effects require on [dark] to look good.
-                    // appTheme.setEffect(WindowEffect.disabled, context);
-                    appTheme.setEffect(appTheme.windowEffect, context);
+                  SettingsManager.saveSettings({'themeMode': mode.name});
+                  
+                  if (mode == ThemeMode.light) {
+                    if (appTheme.windowEffect == WindowEffect.disabled) {
+                      appTheme.windowEffect = WindowEffect.acrylic;
+                      SettingsManager.saveSettings({'windowEffect': WindowEffect.acrylic.name});
+                    }
                   }
                 }
               },
@@ -120,7 +122,7 @@ class _SettingsState extends State<Settings> with PageMixin {
             ),
           );
         }),
-        biggerSpacer,
+        biggerSpacer,*/
         Text('Color Accento', style: FluentTheme.of(context).typography.subtitle),
         spacer,
         Wrap(children: [
@@ -193,6 +195,10 @@ class _SettingsState extends State<Settings> with PageMixin {
                 checked: appTheme.windowEffect == mode,
                 onChanged: (value) {
                   if (value) {
+                    if (mode != WindowEffect.disabled) {
+                      appTheme.mode = ThemeMode.dark;
+                      SettingsManager.saveSettings({'themeMode': ThemeMode.dark.name});
+                    }
                     appTheme.windowEffect = mode;
                     appTheme.setEffect(mode, context);
                     SettingsManager.saveSettings({'windowEffect': mode.name});
