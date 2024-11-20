@@ -506,6 +506,5 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
 
 
 //TODO
-// excel use SFDataGrid to display data
-// create gruppi page to manage mailing lists
+// fix highlightable widget
 // create email page to send emails to mailing lists
