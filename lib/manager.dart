@@ -15,21 +15,19 @@ class Manager {
   static String? excelPath;
   static int lastExcelSheetIndex = 0;
   static List<Ufficio> uffici = [];
-  static List<String> ufficiNames = [];
+  static List<Ufficio> selectedGroups = [];
 
   static Future<void> loadExcel() async {
     uffici.clear(); // Clear the existing uffici list
-    ufficiNames.clear(); // Clear the existing ufficiNames list
 
     File file = File(Manager.excelPath!);
     final bytes = await file.readAsBytes();
     final Excel excel = Excel.decodeBytes(bytes);
-    
+
     for (int i = 0; i < excel.sheets.keys.length; i++) {
       final Ufficio? ufficio = await loadExcelSheet(file, i);
       if (ufficio != null) {
         uffici.add(ufficio);
-        ufficiNames.add(ufficio.nome);
       }
     }
   }
@@ -142,8 +140,8 @@ class SettingsManager {
 
   static Future<void> assignSettings(BuildContext context) async {
     final AppTheme appTheme = Provider.of<AppTheme>(context, listen: false);
-    if (settings["excelPath"] != null && settings["excelPath"] != "") Manager.excelPath = settings["excelPath"];
-    if (settings["windowEffect"] != null && settings["windowEffect"] != "") appTheme.windowEffect = windowEffectfromString(settings["windowEffect"]);
+    if (_settingCheck(settings["excelPath"])) Manager.excelPath = settings["excelPath"];
+    if (_settingCheck(settings["windowEffect"])) appTheme.windowEffect = windowEffectfromString(settings["windowEffect"]);
   }
 
   static void clearSettings() async {
@@ -153,4 +151,6 @@ class SettingsManager {
 
     Manager.excelPath = null;
   }
+
+  static bool _settingCheck(String? setting) => setting != null && setting != "" && setting != "null";
 }

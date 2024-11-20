@@ -224,8 +224,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void initState() {
     windowManager.addListener(this);
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _loadSettings();
+      File file = File(Manager.excelPath!);
+      if (file.existsSync()) await Manager.loadExcel();
     });
   }
 
@@ -472,7 +474,6 @@ class WindowButtons extends StatelessWidget {
   }
 }
 
-
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
@@ -493,9 +494,9 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
 
       /// Excel
       GoRoute(path: '/excel', builder: (context, state) => ExcelScreen(key: excelKey)),
-      
+
       // Gruppi
-      GoRoute(path: '/gruppi', builder: (context, state) => const MailingLists()),
+      GoRoute(path: '/gruppi', builder: (context, state) => MailingLists(key: gruppiKey)),
 
       //Email
       GoRoute(path: '/email', builder: (context, state) => const Email()),
