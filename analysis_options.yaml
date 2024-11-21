@@ -2,4 +2,5 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   errors:
     curly_braces_in_flow_control_structures: ignore
+    invalid_use_of_protected_member: ignore
     library_private_types_in_public_api: ignore

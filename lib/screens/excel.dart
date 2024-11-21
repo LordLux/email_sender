@@ -10,6 +10,7 @@ import 'package:flutter/material.dart' as mat;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:recase/recase.dart';
+import 'package:smooth_highlight/smooth_highlight.dart';
 
 import '../functions.dart';
 import '../main.dart';
@@ -32,6 +33,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
   bool openingPickDialog = false;
   FlyoutController renameFlyoutController = FlyoutController();
   TextEditingController renameController = TextEditingController();
+  bool isHighlighted = false;
 
   int currentUfficioIndex = 0;
 
@@ -124,14 +126,19 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
       children: [
         // SELEZIONA FILE
         if (noFile)
-          CardHighlight(
-            child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              const Text('Nessun file Excel selezionato'),
-              FilledButton(
-                onPressed: pickExcelFile,
-                child: const Text('Seleziona file'),
-              ),
-            ]),
+          ValueChangeHighlight(
+            duration: const Duration(milliseconds: 300),
+            value: isHighlighted,
+            color: FluentTheme.of(context).accentColor.withOpacity(.5),
+            child: CardHighlight(
+              child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                const Text('Nessun file Excel selezionato'),
+                FilledButton(
+                  onPressed: pickExcelFile,
+                  child: const Text('Seleziona file'),
+                ),
+              ]),
+            ),
           ),
         if (!noFile)
           Card(
@@ -253,7 +260,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                 child: Center(
                   child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, direction: Axis.vertical, spacing: 10.0, children: [
                     spacer,
-                    Center(child: Text('Ufficio: ${ufficio.nome.titleCase}', style: FluentTheme.of(context).typography.subtitle!)),
+                    Center(child: Text('Ufficio: ${ufficio.nome}', style: FluentTheme.of(context).typography.subtitle!)),
                     spacer,
                     if (Manager.uffici.isNotEmpty)
                       mat.DataTable(

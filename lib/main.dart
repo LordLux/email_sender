@@ -226,8 +226,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _loadSettings();
-      File file = File(Manager.excelPath!);
-      if (file.existsSync()) await Manager.loadExcel();
+      if (Manager.excelPath != null) {
+        File file = File(Manager.excelPath!);
+        if (file.existsSync()) await Manager.loadExcel();
+      }
     });
   }
 
@@ -506,5 +508,7 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
 
 
 //TODO
-// fix highlightable widget
-// create email page to send emails to mailing lists
+// fix dragNdrop.dart with XFile
+// handle file attachments
+// generate email
+// send email

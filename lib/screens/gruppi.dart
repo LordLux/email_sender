@@ -4,12 +4,14 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/link.dart';
 import 'package:flutter/material.dart' as mat;
+import 'package:smooth_highlight/smooth_highlight.dart';
+import 'package:recase/recase.dart';
 
 import '../classes.dart';
 import '../manager.dart';
-import '../widgets/highlight.dart';
 import '../widgets/page.dart';
 import 'excel.dart';
+import 'gotos.dart';
 
 class MailingLists extends StatefulWidget {
   const MailingLists({super.key});
@@ -21,10 +23,22 @@ class MailingLists extends StatefulWidget {
 final GlobalKey<_MailingListsState> gruppiKey = GlobalKey<_MailingListsState>();
 
 class _MailingListsState extends State<MailingLists> with PageMixin {
-  final GlobalKey<HighlightableWidgetState> hlKey = GlobalKey<HighlightableWidgetState>();
-  bool multiSelection = false;
+  bool isHighlighted = false;
 
   @override
+  void initState() {
+    super.initState();
+    removeHighlight();
+  }
+
+  void removeHighlight() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted)
+      setState(() {
+        isHighlighted = false;
+      });
+  }
+
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
@@ -37,11 +51,7 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
             child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
               const Text('Nessun file Excel selezionato'),
               FilledButton(
-                onPressed: () async {
-                  context.go('/excel');
-                  await Future.delayed(const Duration(milliseconds: 200));
-                  excelKey.currentState?.pickExcelFile();
-                },
+                onPressed: () async => gotoExcel(context),
                 child: const Text('Seleziona file'),
               ),
             ]),
@@ -53,12 +63,17 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
             children: [
               Expanded(
                 flex: 3,
-                child: HighlightableWidget(
-                  key: hlKey,
-                  child: const Card(
-                    child: Text(
-                      'Seleziona i gruppi a cui vuoi inviare l\'email:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                child: mat.Material(
+                  color: Colors.transparent,
+                  child: ValueChangeHighlight(
+                    duration: const Duration(milliseconds: 300),
+                    value: isHighlighted,
+                    color: FluentTheme.of(context).accentColor.withOpacity(.5),
+                    child: const Card(
+                      child: Text(
+                        'Seleziona i gruppi a cui vuoi inviare l\'email:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ),
@@ -72,17 +87,14 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Selezione Multipla',
-                        ),
+                        const Text('Selezione Multipla'),
                         const SizedBox(width: 8),
                         ToggleSwitch(
-                          checked: multiSelection,
+                          checked: Manager.multiSelection,
                           onChanged: (value) {
                             setState(() {
-                              multiSelection = value;
-                              hlKey.currentState!.highlight();
-                              if (!multiSelection && Manager.selectedGroups.isNotEmpty) // Keep only the first element of the list if multiSelection has just been disabled
+                              Manager.multiSelection = value;
+                              if (!Manager.multiSelection && Manager.selectedGroups.isNotEmpty) // Keep only the first element of the list if multiSelection has just been disabled
                                 Manager.selectedGroups = [Manager.uffici.firstWhere((ufficio) => Manager.selectedGroups.contains(ufficio))];
                             });
                           },
@@ -96,30 +108,39 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
           ),
         if (Manager.uffici.isNotEmpty) const SizedBox(height: 16),
         if (Manager.uffici.isNotEmpty)
-          Card(
-            child: SizedBox(
-              height: Manager.uffici.length * 44.0,
-              child: ListView.builder(
-                  itemCount: Manager.uffici.length,
-                  itemBuilder: (context, index) {
-                    final Ufficio ufficio = Manager.uffici[index];
-                    return ListTile.selectable(
-                      title: Text(ufficio.nome),
-                      selected: Manager.selectedGroups.contains(ufficio),
-                      selectionMode: ListTileSelectionMode.single,
-                      onPressed: () {
-                        setState(() {
-                          final bool selected = !Manager.selectedGroups.contains(ufficio);
-                          if (selected) {
-                            if (!multiSelection) Manager.selectedGroups.clear();
-                            Manager.selectedGroups.add(ufficio);
-                          } else {
-                            Manager.selectedGroups.remove(ufficio);
-                          }
-                        });
-                      },
-                    );
-                  }),
+          ValueChangeHighlight(
+            duration: const Duration(milliseconds: 300),
+            value: isHighlighted,
+            color: FluentTheme.of(context).accentColor.withOpacity(.5),
+            child: Card(
+              //padding: const EdgeInsets.symmetric(horizontal: 360, vertical: 8),
+              child: SizedBox(
+                height: Manager.uffici.length * 44.0,
+                child: ListView.builder(
+                    itemCount: Manager.uffici.length,
+                    itemBuilder: (context, index) {
+                      final Ufficio ufficio = Manager.uffici[index];
+                      return ListTile.selectable(
+                        title: Text.rich(TextSpan(children: [
+                          TextSpan(text: '${ufficio.nome} '),
+                          TextSpan(text: '(${ufficio.entries.length} destinatari)', style: TextStyle(color: Colors.white.withOpacity(.5))),
+                        ])),
+                        selected: Manager.selectedGroups.contains(ufficio),
+                        selectionMode: ListTileSelectionMode.single,
+                        onPressed: () {
+                          setState(() {
+                            final bool selected = !Manager.selectedGroups.contains(ufficio);
+                            if (selected) {
+                              if (!Manager.multiSelection) Manager.selectedGroups.clear();
+                              Manager.selectedGroups.add(ufficio);
+                            } else {
+                              Manager.selectedGroups.remove(ufficio);
+                            }
+                          });
+                        },
+                      );
+                    }),
+              ),
             ),
           ),
       ],

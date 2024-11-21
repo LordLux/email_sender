@@ -1,12 +1,15 @@
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:email_sender/enums.dart';
+import 'package:email_sender/screens/excel.dart';
 import 'package:email_sender/theme.dart';
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:recase/recase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'classes.dart';
@@ -16,6 +19,9 @@ class Manager {
   static int lastExcelSheetIndex = 0;
   static List<Ufficio> uffici = [];
   static List<Ufficio> selectedGroups = [];
+  static bool multiSelection = false;
+
+  static List<XFile> attachments = []; //TODO ricordarsi di svuotare la lista dopo l'invio
 
   static Future<void> loadExcel() async {
     uffici.clear(); // Clear the existing uffici list
@@ -67,7 +73,7 @@ class Manager {
 
       // Create the Ufficio object
       final ufficio = Ufficio(
-        nome: excel.sheets.keys.toList()[sheetIndex],
+        nome: excel.sheets.keys.toList()[sheetIndex].titleCase,
         headers: headers,
         entries: entries,
       );
