@@ -14,11 +14,16 @@ void gotoExcel(BuildContext context) async {
   });
 }
 
-void gotoGruppi(BuildContext context) async {
+void gotoGruppi(BuildContext context, [bool? extra]) async {
   context.go('/gruppi');
   while (gruppiKey.currentState == null) await Future.delayed(const Duration(milliseconds: 50));
   await Future.delayed(const Duration(milliseconds: 150));
+  
+  if (extra == null) return;
   gruppiKey.currentState!.setState(() {
-    gruppiKey.currentState!.isHighlighted = true;
+    if (!extra)
+      gruppiKey.currentState!.isHighlighted = true;
+    else
+      gruppiKey.currentState!.isHighlighted2 = true;
   });
 }

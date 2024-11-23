@@ -8,6 +8,7 @@ import 'package:flutter_acrylic/flutter_acrylic.dart' as flutter_acrylic;
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart' as mat;
 
 import 'manager.dart';
 import 'screens/email.dart';
@@ -80,41 +81,53 @@ class MyApp extends StatelessWidget {
       value: _appTheme,
       builder: (context, child) {
         final appTheme = context.watch<AppTheme>();
-        return FluentApp.router(
-          title: appTitle,
-          themeMode: appTheme.mode,
-          debugShowCheckedModeBanner: false,
-          color: appTheme.color,
-          darkTheme: FluentThemeData(
-            brightness: Brightness.dark,
-            accentColor: appTheme.color,
-            visualDensity: VisualDensity.standard,
-            focusTheme: FocusThemeData(
-              glowFactor: is10footScreen(context) ? 2.0 : 0.0,
-            ),
-          ),
-          theme: FluentThemeData(
-            accentColor: appTheme.color,
-            visualDensity: VisualDensity.standard,
-            focusTheme: FocusThemeData(
-              glowFactor: is10footScreen(context) ? 2.0 : 0.0,
-            ),
-          ),
-          locale: const Locale('it'),
-          builder: (context, child) {
-            return Directionality(
-              textDirection: appTheme.textDirection,
-              child: NavigationPaneTheme(
-                data: NavigationPaneThemeData(
-                  backgroundColor: appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled ? Colors.transparent : null,
-                ),
-                child: child!,
+        return mat.ScaffoldMessenger(
+          child: FluentApp.router(
+            title: appTitle,
+            themeMode: appTheme.mode,
+            debugShowCheckedModeBanner: false,
+            color: appTheme.color,
+            darkTheme: FluentThemeData(
+              brightness: Brightness.dark,
+              accentColor: appTheme.color,
+              visualDensity: VisualDensity.standard,
+              focusTheme: FocusThemeData(
+                glowFactor: is10footScreen(context) ? 2.0 : 0.0,
               ),
-            );
-          },
-          routeInformationParser: router.routeInformationParser,
-          routerDelegate: router.routerDelegate,
-          routeInformationProvider: router.routeInformationProvider,
+            ),
+            theme: FluentThemeData(
+              accentColor: appTheme.color,
+              visualDensity: VisualDensity.standard,
+              focusTheme: FocusThemeData(
+                glowFactor: is10footScreen(context) ? 2.0 : 0.0,
+              ),
+            ),
+            locale: const Locale('it'),
+            builder: (context, child) {
+              return Navigator(
+                onGenerateRoute: (_) => mat.MaterialPageRoute(
+                  builder: (context) => Overlay(
+                    initialEntries: [
+                      OverlayEntry(
+                        builder: (context) => Directionality(
+                          textDirection: appTheme.textDirection,
+                          child: NavigationPaneTheme(
+                            data: NavigationPaneThemeData(
+                              backgroundColor: appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled ? Colors.transparent : null,
+                            ),
+                            child: child ?? const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            routeInformationParser: router.routeInformationParser,
+            routerDelegate: router.routerDelegate,
+            routeInformationProvider: router.routeInformationProvider,
+          ),
         );
       },
     );
@@ -151,8 +164,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       icon: const Icon(FluentIcons.home),
       title: const Text('Home'),
       body: const SizedBox.shrink(),
+      //infoBadge: const InfoBadge(source: Icon(mat.Icons.check, size: 12.0)),
     ),
-    //PaneItemSeparator(),
+    PaneItemSeparator(),
     //PaneItemHeader(header: const Text('Excel')),
     PaneItem(
       key: const ValueKey('/excel'),
@@ -163,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     PaneItem(
       key: const ValueKey('/gruppi'),
       icon: const Icon(FluentIcons.people),
-      title: const Text('Gruppi'),
+      title: const Text('Destinatari'),
       body: const SizedBox.shrink(),
     ),
     PaneItem(
@@ -179,6 +193,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         icon: item.icon,
         title: item.title,
         body: item.body,
+        infoBadge: item.infoBadge,
         onTap: () {
           final path = (item.key as ValueKey).value;
           if (GoRouterState.of(context).uri.toString() != path) {
@@ -195,13 +210,15 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         icon: e.icon,
         title: e.title,
         body: e.body,
+        infoBadge: e.infoBadge,
         items: e.items.map((item) {
           if (item is PaneItem) return buildPaneItem(item);
           return item;
         }).toList(),
       );
     }
-    return buildPaneItem(e);
+    if (e is PaneItem) return buildPaneItem(e);
+    return e;
   }).toList();
   late final List<NavigationPaneItem> footerItems = [
     PaneItemSeparator(),
@@ -271,7 +288,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       key: viewKey,
       appBar: NavigationAppBar(
         automaticallyImplyLeading: false,
-        leading: () {
+        /*leading: () {
           final enabled = widget.shellContext != null && router.canPop();
 
           final onPressed = enabled
@@ -309,6 +326,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             ),
           );
         }(),
+        */
         title: () {
           if (kIsWeb) {
             return const Align(
@@ -366,7 +384,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           }
         }(),
         items: originalItems,
-        autoSuggestBox: Builder(builder: (context) {
+        /*autoSuggestBox: Builder(builder: (context) {
           return AutoSuggestBox(
             key: searchKey,
             focusNode: searchFocusNode,
@@ -413,7 +431,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             placeholder: 'Ricerca',
           );
         }),
-        autoSuggestBoxReplacement: const Icon(FluentIcons.search),
+        autoSuggestBoxReplacement: const Icon(FluentIcons.search),*/
         footerItems: footerItems,
       ),
       onOpenSearch: searchFocusNode.requestFocus,
@@ -476,13 +494,15 @@ class WindowButtons extends StatelessWidget {
   }
 }
 
-final rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<_MyHomePageState> homePageKey = GlobalKey<_MyHomePageState>();
 final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
   ShellRoute(
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
       return MyHomePage(
+        key: homePageKey,
         shellContext: _shellNavigatorKey.currentContext,
         child: child,
       );

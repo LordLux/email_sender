@@ -104,17 +104,24 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
       await Manager.loadExcel(); // Reload data from the Excel file
       data = Manager.uffici; // Update the local data
       if (kDebugMode) print('File exists, loaded: \'${Manager.excelPath}\'');
-    } else if (kDebugMode) {
-      print('File does not exist');
-    }
 
+      updateInfoBadge("/excel", const InfoBadge(source: Icon(mat.Icons.check), color: mat.Colors.lightGreen), true);
+    } else {
+      updateInfoBadge("/excel", null, true);
+      if (kDebugMode) print('File does not exist');
+    }
     setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
-    loadData();
+    if (Manager.uffici.isEmpty)
+      loadData();
+    else {
+      noFile = false;
+      data = Manager.uffici;
+    }
   }
 
   @override
@@ -211,41 +218,51 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
         // TABELLA
         if (!noFile && data != null && data!.isNotEmpty && (currentUfficioIndex != 0 || currentUfficioIndex != Manager.uffici.length - 1))
           Card(
-            child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, children: [
-              mat.Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  currentUfficioIndex != 0
-                      ? FilledButton(
-                          onPressed: () => goToPreviousPage(),
-                          child: const Row(
-                            children: [
-                              Icon(mat.Icons.keyboard_arrow_left_outlined, size: 15),
-                              SizedBox(width: 6),
-                              Text('Pagina Precedente'),
-                            ],
-                          ),
-                        )
-                      : const SizedBox(width: 138),
-                  const SizedBox(width: 20),
-                  Text('Pagina ${currentUfficioIndex + 1} di ${Manager.uffici.length}'),
-                  const SizedBox(width: 20),
-                  currentUfficioIndex != Manager.uffici.length - 1
-                      ? FilledButton(
-                          onPressed: () => goToNextPage(),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Pagina Successiva'),
-                              SizedBox(width: 6),
-                              Icon(mat.Icons.keyboard_arrow_right_outlined, size: 15),
-                            ],
-                          ),
-                        )
-                      : const SizedBox(width: 135),
-                ],
-              ),
-            ]),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                spacer,
+                Center(child: Text('Numero Uffici: ${Manager.uffici.length}', style: FluentTheme.of(context).typography.subtitle)),
+                spacer,
+                spacer,
+                Wrap(alignment: WrapAlignment.center, spacing: 10.0, children: [
+                  mat.Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      currentUfficioIndex != 0
+                          ? FilledButton(
+                              onPressed: () => goToPreviousPage(),
+                              child: const Row(
+                                children: [
+                                  Icon(mat.Icons.keyboard_arrow_left_outlined, size: 15),
+                                  SizedBox(width: 6),
+                                  Text('Pagina Precedente'),
+                                ],
+                              ),
+                            )
+                          : const SizedBox(width: 138),
+                      const SizedBox(width: 20),
+                      Text('Pagina ${currentUfficioIndex + 1} di ${Manager.uffici.length}'),
+                      const SizedBox(width: 20),
+                      currentUfficioIndex != Manager.uffici.length - 1
+                          ? FilledButton(
+                              onPressed: () => goToNextPage(),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('Pagina Successiva'),
+                                  SizedBox(width: 6),
+                                  Icon(mat.Icons.keyboard_arrow_right_outlined, size: 15),
+                                ],
+                              ),
+                            )
+                          : const SizedBox(width: 135),
+                    ],
+                  ),
+                ]),
+                spacer,
+              ],
+            ),
           ),
         spacer,
         if (!noFile && data != null)
@@ -260,7 +277,22 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                 child: Center(
                   child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, direction: Axis.vertical, spacing: 10.0, children: [
                     spacer,
-                    Center(child: Text('Ufficio: ${ufficio.nome}', style: FluentTheme.of(context).typography.subtitle!)),
+                    Center(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'Ufficio: ${ufficio.nome} ',
+                          style: FluentTheme.of(context).typography.subtitle,
+                          children: [
+                            TextSpan(
+                              text: '(${ufficio.entries.length} destinatari)',
+                              style: FluentTheme.of(context).typography.subtitle!.copyWith(
+                                    color: FluentTheme.of(context).typography.subtitle!.color!.withOpacity(0.5),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     spacer,
                     if (Manager.uffici.isNotEmpty)
                       mat.DataTable(

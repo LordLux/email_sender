@@ -8,20 +8,43 @@ import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:recase/recase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'classes.dart';
+import 'functions.dart';
 
 class Manager {
   static String? excelPath;
-  static int lastExcelSheetIndex = 0;
+  static String sourceMail = 'daniele.mason@maggioli.it';
+  static String? password;
+  
   static List<Ufficio> uffici = [];
-  static List<Ufficio> selectedGroups = [];
+  
   static bool multiSelection = false;
+  static List<Ufficio> selectedGroups = [];
+  static List<Map<String, String>> extraRecipients = [];
+  
+  static List<XFile> attachments = [];
+  
+  static TextEditingController emailController = TextEditingController();
+  static TextEditingController oggettoController = TextEditingController();
+  static TextEditingController extraRecNameController = TextEditingController();
+  static TextEditingController extraRecEmailController = TextEditingController();
 
-  static List<XFile> attachments = []; //TODO ricordarsi di svuotare la lista dopo l'invio
+
+  static Future<String> get lastDirectory async => excelPath != null ? removeFileNameFromPath(excelPath!) : (await getApplicationSupportDirectory()).path;
+
+  static void clearEmail(VoidCallback setState) {
+    selectedGroups.clear();
+    attachments.clear();
+    emailController.clear();
+    oggettoController.clear();
+    multiSelection = false;
+    setState();
+  }
 
   static Future<void> loadExcel() async {
     uffici.clear(); // Clear the existing uffici list
@@ -34,6 +57,7 @@ class Manager {
       final Ufficio? ufficio = await loadExcelSheet(file, i);
       if (ufficio != null) {
         uffici.add(ufficio);
+        print('Loaded ${ufficio.nome} with ${ufficio.entries.length} entries');
       }
     }
   }
@@ -148,6 +172,8 @@ class SettingsManager {
     final AppTheme appTheme = Provider.of<AppTheme>(context, listen: false);
     if (_settingCheck(settings["excelPath"])) Manager.excelPath = settings["excelPath"];
     if (_settingCheck(settings["windowEffect"])) appTheme.windowEffect = windowEffectfromString(settings["windowEffect"]);
+    if (_settingCheck(settings["password"])) Manager.password = settings["password"];
+    if (_settingCheck(settings["sourceMail"])) Manager.sourceMail = settings["sourceMail"];
   }
 
   static void clearSettings() async {

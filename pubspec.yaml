@@ -32,6 +32,9 @@ dependencies:
   cross_file: ^0.3.4+2
   flutter_svg: ^2.0.15
   dotted_border: ^2.1.0
+  open_file: ^3.5.10
+  flutter_html: ^3.0.0-beta.2
+  material_symbols_icons: ^4.2799.0
 
 dev_dependencies:
   flutter_test:

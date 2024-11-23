@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   flutter_acrylic
+  open_file_linux
   screen_retriever_linux
   system_theme
   url_launcher_linux
