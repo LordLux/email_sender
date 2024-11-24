@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:email_sender/screens/gruppi.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide Page;
 import 'package:flutter/foundation.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:system_theme/system_theme.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' as flutter_acrylic;
 import 'package:provider/provider.dart';
@@ -10,13 +10,16 @@ import 'package:window_manager/window_manager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart' as mat;
 
-import 'manager.dart';
+import '../screens/gruppi.dart';
+import '../src/database.dart' as db;
+import 'functions.dart';
+import 'src/manager.dart';
+import 'screens/credentials.dart';
 import 'screens/email.dart';
 import 'screens/excel.dart';
 import 'screens/home.dart';
 import 'screens/settings.dart';
 import 'theme.dart';
-import 'widgets/deferred_widget.dart';
 
 final _appTheme = AppTheme();
 
@@ -48,6 +51,10 @@ void main() async {
       await windowManager.setSkipTaskbar(false);
     });
   }
+  //
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+  db.EmailDatabase().cleanDatabase();
 
   SettingsManager.settings = await SettingsManager.loadSettings();
 
@@ -223,6 +230,17 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   late final List<NavigationPaneItem> footerItems = [
     PaneItemSeparator(),
     PaneItem(
+      key: const ValueKey('/credentials'),
+      icon: const Icon(FluentIcons.lock),
+      title: const Text('Credenziali'),
+      body: const SizedBox.shrink(),
+      onTap: () {
+        if (GoRouterState.of(context).uri.toString() != '/credentials') {
+          context.go('/credentials');
+        }
+      },
+    ),
+    PaneItem(
       key: const ValueKey('/settings'),
       icon: const Icon(FluentIcons.settings),
       title: const Text('Impostazioni'),
@@ -246,6 +264,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       if (Manager.excelPath != null) {
         File file = File(Manager.excelPath!);
         if (file.existsSync()) await Manager.loadExcel();
+      }
+
+      if (Manager.sourceMail.isEmpty || Manager.sourcePassword == null || Manager.sourcePassword!.isEmpty) {
+        print('Credenziali non impostate');
+        infoBadge('/credentials', false);
+        setState(() {});
       }
     });
   }
@@ -496,23 +520,20 @@ class WindowButtons extends StatelessWidget {
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<_MyHomePageState> homePageKey = GlobalKey<_MyHomePageState>();
+final GlobalKey<_MyHomePageState> myHomePageKey = GlobalKey<_MyHomePageState>();
 final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
   ShellRoute(
     navigatorKey: _shellNavigatorKey,
     builder: (context, state, child) {
       return MyHomePage(
-        key: homePageKey,
+        key: myHomePageKey,
         shellContext: _shellNavigatorKey.currentContext,
         child: child,
       );
     },
     routes: <GoRoute>[
       /// Home
-      GoRoute(path: '/', builder: (context, state) => const HomePage()),
-
-      /// Settings
-      GoRoute(path: '/settings', builder: (context, state) => const Settings()),
+      GoRoute(path: '/', builder: (context, state) => HomePage(key: homePageKey)),
 
       /// Excel
       GoRoute(path: '/excel', builder: (context, state) => ExcelScreen(key: excelKey)),
@@ -522,6 +543,14 @@ final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
 
       //Email
       GoRoute(path: '/email', builder: (context, state) => const Email()),
+
+      /////////////////////
+
+      /// Credentials
+      GoRoute(path: '/credentials', builder: (context, state) => const Credentials()),
+
+      /// Settings
+      GoRoute(path: '/settings', builder: (context, state) => const Settings()),
     ],
   ),
 ]);

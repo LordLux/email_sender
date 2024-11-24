@@ -12,15 +12,19 @@ import 'package:flutter_svg/svg.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../emailManager.dart';
+import '../src/database.dart' as db;
+import '../src/emailManager.dart';
 import '../functions.dart';
 import '../main.dart';
-import '../manager.dart';
+import '../src/manager.dart';
 import '../vars.dart';
 import '../widgets/card_highlight.dart';
 import '../widgets/page.dart';
+import 'excel.dart';
 import 'gotos.dart';
+import 'home.dart';
 
 class Email extends StatefulWidget {
   const Email({super.key});
@@ -109,16 +113,17 @@ class _EmailState extends State<Email> with PageMixin {
               ]),
             ),
           if (Manager.uffici.isEmpty) spacer,
-          if (emptyRecipients)
-            CardHighlight(
-              child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                const Text('Nessun gruppo selezionato!'),
-                FilledButton(
-                  onPressed: () async => gotoGruppi(context, false),
-                  child: const Text('Seleziona gruppo'),
-                ),
-              ]),
-            ),
+          if (Manager.uffici.isNotEmpty)
+            if (emptyRecipients)
+              CardHighlight(
+                child: Wrap(alignment: WrapAlignment.center, spacing: 10.0, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  const Text('Nessun Destinatario selezionato!'),
+                  FilledButton(
+                    onPressed: () async => gotoGruppi(context, null),
+                    child: const Text('Seleziona Destinatari'),
+                  ),
+                ]),
+              ),
           if (Manager.uffici.isNotEmpty && !emptyRecipients) spacer,
           if (Manager.uffici.isNotEmpty && !emptyRecipients)
             Card(
@@ -145,16 +150,30 @@ class _EmailState extends State<Email> with PageMixin {
                                 ])),
                               ] +
                               Manager.selectedGroups
-                                  .map((group) => ufficioChip(group, FluentTheme.of(context).accentColor, () {
-                                        if (Manager.selectedGroups.isEmpty) updateInfoBadge('/gruppi', null, false);
-                                        setState(() {});
-                                      }))
+                                  .map((group) => ufficioChip(
+                                        group,
+                                        FluentTheme.of(context).accentColor,
+                                        () {
+                                          if (Manager.selectedGroups.isEmpty) infoBadge('/gruppi', null);
+                                          setState(() {});
+                                        },
+                                      ))
                                   .toList() +
                               [
-                                for (final recipient in Manager.extraRecipients) recipientChip(recipient['name']!, recipient['email']!, FluentTheme.of(context).accentColor, () => setState(() {})),
+                                for (final recipient in Manager.extraRecipients)
+                                  recipientChip(
+                                    recipient['name']!,
+                                    recipient['email']!,
+                                    FluentTheme.of(context).accentColor,
+                                    () => setState(() {}),
+                                  ),
                               ] +
                               [
-                                MouseRegion(cursor: SystemMouseCursors.click, child: Button(child: const Icon(mat.Icons.add), onPressed: () => gotoGruppi(context, null))),
+                                if (!previewOn)
+                                  MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: Button(child: const Icon(mat.Icons.add), onPressed: () => gotoGruppi(context, null)),
+                                  ),
                               ],
                         );
                       },
@@ -191,6 +210,7 @@ class _EmailState extends State<Email> with PageMixin {
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: Html(
                             data: processHtml(fullEmail, true),
+                            onLinkTap: (url, attributes, element) => launchUrl(Uri.parse(url!)),
                             style: {
                               "p": Style(
                                 color: Colors.white,
@@ -301,7 +321,7 @@ class _EmailState extends State<Email> with PageMixin {
                                               return const Icon(FluentIcons.excel_document, size: 16.0, color: Colors.white);
                                             case '.pdf':
                                               return const Icon(FluentIcons.pdf, size: 16.0, color: Colors.white);
-                                            case '.pptx' || '.ppt' || '.odp':
+                                            case '.pptx' || '.ppt' || '.odp' || '.pps' || '.ppsx':
                                               return const Icon(FluentIcons.power_point_document, size: 16.0, color: Colors.white);
                                             case '.zip' || '.rar' || '.7z' || '.tar' || '.gz' || '.tgz' || '.bz2' || '.xz':
                                               // ignore: deprecated_member_use
@@ -338,26 +358,29 @@ class _EmailState extends State<Email> with PageMixin {
                         ),
                       ],
                     ),
-                  if (!previewOn) spacer,
-                  if (previewOn && Manager.attachments.isNotEmpty) spacer,
-                  FilledButton(
-                    style: ButtonStyle(
-                      shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4.0),
-                        side: BorderSide(color: FluentTheme.of(context).accentColor.withOpacity(.5)),
-                      )),
-                    ),
-                    onPressed: () {
-                      previewOn = !previewOn;
-                      setState(() {});
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(previewOn ? FluentIcons.edit : mat.Icons.visibility, size: 16.0),
-                        const SizedBox(width: 4.0),
-                        Text(previewOn ? 'Modifica Testo Email' : 'Mostra Anteprima Email'),
-                      ],
+                  if (!previewOn) biggerSpacer,
+                  if (previewOn && Manager.attachments.isNotEmpty) biggerSpacer,
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: FilledButton(
+                      style: ButtonStyle(
+                        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.0),
+                          side: BorderSide(color: FluentTheme.of(context).accentColor.withOpacity(.5)),
+                        )),
+                      ),
+                      onPressed: () {
+                        previewOn = !previewOn;
+                        setState(() {});
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(previewOn ? FluentIcons.edit : mat.Icons.visibility, size: 16.0),
+                          const SizedBox(width: 4.0),
+                          Text(previewOn ? 'Modifica Email' : 'Mostra Anteprima Email'),
+                        ],
+                      ),
                     ),
                   )
                 ],
@@ -370,7 +393,7 @@ class _EmailState extends State<Email> with PageMixin {
               alignment: WrapAlignment.center,
               spacing: 10.0,
               children: [
-                FilledButton(
+                Button(
                   onPressed: () => Manager.clearEmail(() => setState(() {})),
                   child: const Text('Cancella'),
                 ),
@@ -380,8 +403,8 @@ class _EmailState extends State<Email> with PageMixin {
                     onPressed: () async {
                       List<Map<String, Color>> extra = [];
 
-                      if (Manager.selectedGroups.isEmpty) {
-                        snackBar('Nessun gruppo selezionato', severity: InfoBarSeverity.error);
+                      if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) {
+                        snackBar('Nessun Dstinatario selezionato', severity: InfoBarSeverity.error);
                         return;
                       }
 
@@ -395,74 +418,81 @@ class _EmailState extends State<Email> with PageMixin {
                       if (Manager.attachments.isEmpty) extra.add({'Nessun allegato selezionato.': mat.Colors.white});
 
                       //
-                      bool confirm = await flyoutController.showFlyout<bool>(
-                            autoModeConfiguration: FlyoutAutoConfiguration(
-                              preferredMode: FlyoutPlacementMode.right,
-                            ),
-                            barrierDismissible: true,
-                            dismissOnPointerMoveAway: false,
-                            dismissWithEsc: true,
-                            navigatorKey: rootNavigatorKey.currentState,
-                            barrierColor: Colors.black.withOpacity(0.5),
-                            builder: (context) => FlyoutContent(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text.rich(TextSpan(children: [
-                                    const TextSpan(text: 'Sei sicuro di voler inviare l\'email?\n'),
-                                    if (extra.isNotEmpty) const TextSpan(text: "\n"),
-                                    for (final e in extra)
-                                      TextSpan(
-                                        children: [
-                                          WidgetSpan(
-                                            alignment: PlaceholderAlignment.middle,
-                                            child: Padding(
-                                              padding: const EdgeInsets.only(right: 4.0),
-                                              child: Icon(e.values.first == mat.Colors.amber ? mat.Icons.warning_amber : mat.Icons.info_outline, color: e.values.first),
-                                            ),
-                                          ),
-                                          TextSpan(
-                                            text: e.keys.first,
-                                            style: TextStyle(color: e.values.first),
-                                          )
-                                        ],
-                                      ),
-                                    if (extra.isNotEmpty) const TextSpan(text: "\n"),
-                                  ])),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Button(
-                                        child: const Text('Annulla'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop(false);
-                                          //Flyout.of(context).close();
-                                        },
-                                      ),
-                                      const SizedBox(width: 8.0),
-                                      FilledButton(
-                                        child: const Text('Invia Email Comunque'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop(true);
-                                        },
-                                      ),
-                                    ],
-                                  )
-                                ],
+                      if (extra.isNotEmpty) {
+                        bool confirm = await flyoutController.showFlyout<bool>(
+                              autoModeConfiguration: FlyoutAutoConfiguration(
+                                preferredMode: FlyoutPlacementMode.right,
                               ),
-                            ),
-                          ) ??
-                          false;
+                              barrierDismissible: true,
+                              dismissOnPointerMoveAway: false,
+                              dismissWithEsc: true,
+                              navigatorKey: rootNavigatorKey.currentState,
+                              barrierColor: Colors.black.withOpacity(0.5),
+                              builder: (context) => FlyoutContent(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text.rich(TextSpan(children: [
+                                      const TextSpan(text: 'Sei sicuro di voler inviare l\'email?\n'),
+                                      if (extra.isNotEmpty) const TextSpan(text: "\n"),
+                                      for (final e in extra)
+                                        TextSpan(
+                                          children: [
+                                            WidgetSpan(
+                                              alignment: PlaceholderAlignment.middle,
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(right: 4.0),
+                                                child: Icon(e.values.first == mat.Colors.amber ? mat.Icons.warning_amber : mat.Icons.info_outline, color: e.values.first),
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: e.keys.first,
+                                              style: TextStyle(color: e.values.first),
+                                            )
+                                          ],
+                                        ),
+                                      if (extra.isNotEmpty) const TextSpan(text: "\n"),
+                                    ])),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Button(
+                                          child: const Text('Annulla'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop(false);
+                                            //Flyout.of(context).close();
+                                          },
+                                        ),
+                                        const SizedBox(width: 8.0),
+                                        FilledButton(
+                                          child: const Text('Invia Comunque'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop(true);
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ) ??
+                            false;
 
-                      if (confirm != true) return;
+                        if (confirm != true) return;
+                      }
 
+                      List<String> bccNames = [];
                       List<String> bcc = [];
+                      // Add the selected groups to the BCC list
                       for (final ufficio in Manager.selectedGroups) {
                         for (final row in ufficio.entries) {
-                          bcc.add(row[2]);
+                          bccNames.add(row[0]); // Name
+                          bcc.add(row[2]); // Email
                         }
                       }
+                      // Add the extra recipients to the BCC list
                       bcc.addAll(Manager.extraRecipients.map((e) => e['email']!));
+                      bccNames.addAll(Manager.extraRecipients.map((e) => e['name']!));
 
                       if (kDebugMode) print(bcc);
                       if (kDebugMode) print(Manager.oggettoController.text);
@@ -476,7 +506,34 @@ class _EmailState extends State<Email> with PageMixin {
                         attachments: Manager.attachments,
                       );
 
-                      if (emailSent) Manager.clearEmail(() => setState(() {}));
+                      if (emailSent) {
+                        // Save the email to the database
+                        final newEmail = db.Email(
+                          recipients: db.joinRecipients(bcc, bccNames),
+                          subject: Manager.oggettoController.text,
+                          body: Manager.emailController.text,
+                          attachments: Manager.attachments.map((file) => file.path).join(', '),
+                          timestamp: DateTime.now().toUtc().toIso8601String(),
+                        );
+                        await db.emailDb.addEmail(newEmail);
+
+                        // Clear the email fields
+                        previewOn = false;
+                        Manager.clearEmail(() => setState(() {}));
+                        infoBadge('/email', true);
+                        snackBar('Email inviata con successo', severity: InfoBarSeverity.success);
+
+                        // Reset the badges after 2 seconds
+                        await Future.delayed(const Duration(seconds: 2), () {
+                          infoBadge('/email', null);
+                          infoBadge('/gruppi', null);
+                          infoBadge('/excel', null);
+                          infoBadge('/email', null);
+                        });
+
+                        router.go('/');
+                        homePageKey.currentState?.isHighlighted = true;
+                      }
                     },
                     child: const Text('Invia Email'),
                   ),
@@ -513,8 +570,4 @@ String processHtml(String text, [bool whiten = false]) {
   return text;
 }
 
-String convertToHtml(String text) => text
-    .split('\n\n')
-    .map((paragraph) => paragraph.split('\n').join('<br>'))
-    .map((paragraph) => '<p>$paragraph</p>')
-    .join();
+String convertToHtml(String text) => text.split('\n\n').map((paragraph) => paragraph.split('\n').join('<br>')).map((paragraph) => '<p>$paragraph</p>').join();

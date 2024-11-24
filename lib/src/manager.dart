@@ -13,13 +13,14 @@ import 'package:provider/provider.dart';
 import 'package:recase/recase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'classes.dart';
-import 'functions.dart';
+import '../src/classes.dart';
+import '../functions.dart';
 
 class Manager {
   static String? excelPath;
   static String sourceMail = 'daniele.mason@maggioli.it';
-  static String? password;
+  static String sourceName = 'Daniele Mason';
+  static String? sourcePassword;
   
   static List<Ufficio> uffici = [];
   
@@ -42,6 +43,7 @@ class Manager {
     attachments.clear();
     emailController.clear();
     oggettoController.clear();
+    extraRecipients.clear();
     multiSelection = false;
     setState();
   }
@@ -172,8 +174,9 @@ class SettingsManager {
     final AppTheme appTheme = Provider.of<AppTheme>(context, listen: false);
     if (_settingCheck(settings["excelPath"])) Manager.excelPath = settings["excelPath"];
     if (_settingCheck(settings["windowEffect"])) appTheme.windowEffect = windowEffectfromString(settings["windowEffect"]);
-    if (_settingCheck(settings["password"])) Manager.password = settings["password"];
+    if (_settingCheck(settings["password"])) Manager.sourcePassword = settings["password"];
     if (_settingCheck(settings["sourceMail"])) Manager.sourceMail = settings["sourceMail"];
+    if (_settingCheck(settings["sourceName"])) Manager.sourceName = settings["sourceName"];
   }
 
   static void clearSettings() async {

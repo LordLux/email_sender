@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:email_sender/classes.dart';
+import 'package:email_sender/src/classes.dart';
 import 'package:email_sender/vars.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -14,7 +14,7 @@ import 'package:smooth_highlight/smooth_highlight.dart';
 
 import '../functions.dart';
 import '../main.dart';
-import '../manager.dart';
+import '../src/manager.dart';
 import '../widgets/card_highlight.dart';
 import '../widgets/page.dart';
 
@@ -104,10 +104,9 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
       await Manager.loadExcel(); // Reload data from the Excel file
       data = Manager.uffici; // Update the local data
       if (kDebugMode) print('File exists, loaded: \'${Manager.excelPath}\'');
-
-      updateInfoBadge("/excel", const InfoBadge(source: Icon(mat.Icons.check), color: mat.Colors.lightGreen), true);
+      infoBadge('/excel', true);
     } else {
-      updateInfoBadge("/excel", null, true);
+      infoBadge('/excel', null);
       if (kDebugMode) print('File does not exist');
     }
     setState(() {});
@@ -121,6 +120,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     else {
       noFile = false;
       data = Manager.uffici;
+      infoBadge('/excel', true, false);
     }
   }
 
@@ -278,20 +278,22 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                   child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, direction: Axis.vertical, spacing: 10.0, children: [
                     spacer,
                     Center(
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'Ufficio: ${ufficio.nome} ',
-                          style: FluentTheme.of(context).typography.subtitle,
-                          children: [
-                            TextSpan(
-                              text: '(${ufficio.entries.length} destinatari)',
-                              style: FluentTheme.of(context).typography.subtitle!.copyWith(
-                                    color: FluentTheme.of(context).typography.subtitle!.color!.withOpacity(0.5),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        return Text.rich(
+                          TextSpan(
+                            text: 'Ufficio: ${ellipsizeText(ufficio.nome, constraints.maxWidth)} ',
+                            style: FluentTheme.of(context).typography.subtitle,
+                            children: [
+                              TextSpan(
+                                text: '(${ufficio.entries.length} destinatari)',
+                                style: FluentTheme.of(context).typography.subtitle!.copyWith(
+                                      color: FluentTheme.of(context).typography.subtitle!.color!.withOpacity(0.5),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ),
                     spacer,
                     if (Manager.uffici.isNotEmpty)
@@ -300,22 +302,22 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                         columns: List<mat.DataColumn>.generate(
                           ufficio.headers.length,
                           (index) {
-                            double? width;
-                            switch (ufficio.headers[index].toLowerCase()) {
-                              case 'mail':
+                            double width = 100;
+                            switch (index) {
+                              case 2:
                                 width = 300;
                                 break;
-                              case 'comune':
-                                width = 150;
+                              case 1:
+                                width = 200;
                                 break;
-                              case 'nome':
+                              case 0:
                                 width = 250;
                                 break;
                             }
                             return mat.DataColumn(
                               label: SizedBox(
                                 width: width,
-                                child: Text(ufficio.headers[index], style: FluentTheme.of(context).typography.subtitle!),
+                                child: Text(ellipsizeText(ufficio.headers[index], width), style: FluentTheme.of(context).typography.subtitle!, textAlign: TextAlign.center),
                               ),
                             );
                           },
@@ -324,22 +326,32 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                           ufficio.entries.length,
                           (index) => mat.DataRow(
                             cells: List<mat.DataCell>.generate(ufficio.entries[index].length, (i) {
-                              double? width;
-                              switch (ufficio.entries[index][i].toLowerCase()) {
-                                case 'mail':
+                              double width = 100;
+
+                              switch (i) {
+                                case 2:
                                   width = 300;
                                   break;
-                                case 'comune':
-                                  width = 150;
+                                case 1:
+                                  width = 200;
                                   break;
-                                case 'nome':
+                                case 0:
                                   width = 250;
                                   break;
                               }
                               return mat.DataCell(
                                 SizedBox(
                                   width: width,
-                                  child: Text(ufficio.entries[index][i]),
+                                  child: Tooltip(
+                                    message: ufficio.entries[index][i],
+                                    style: const TooltipThemeData(
+                                      waitDuration: Duration.zero,
+                                    ),
+                                    child: GestureDetector(
+                                      onTap: () => copyToClipboard(ufficio.entries[index][i]),
+                                      onSecondaryTap: () => copyToClipboard(ufficio.entries[index][i]),
+                                      child: Text(ufficio.entries[index][i], maxLines: 1, textAlign: TextAlign.center)),
+                                  ),
                                 ),
                               );
                             }),

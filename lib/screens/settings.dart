@@ -1,6 +1,5 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:email_sender/manager.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart' as mat;
 
+import '../src/manager.dart';
 import '../functions.dart';
 import '../theme.dart';
 import '../widgets/page.dart';
@@ -89,15 +89,7 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> with PageMixin {
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _passwordController.text = Manager.password ?? '';
-    _emailController.text = Manager.sourceMail;
-  }
+  bool needsToRestart = false;
 
   @override
   Widget build(BuildContext context) {
@@ -109,64 +101,6 @@ class _SettingsState extends State<Settings> with PageMixin {
     return ScaffoldPage.scrollable(
       header: const PageHeader(title: Text('Impostazioni')),
       children: [
-        Text('Credenziali', style: FluentTheme.of(context).typography.subtitle?.copyWith(fontSize: 24.0)),
-        spacer,
-        Row(
-          children: [
-            SizedBox(
-              width: 450.0,
-              child: Card(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Email', style: FluentTheme.of(context).typography.subtitle),
-                    PasswordBox(
-                      controller: _emailController,
-                      leadingIcon: const Padding(
-                        padding: EdgeInsets.only(left: 8.0),
-                        child: Icon(mat.Icons.email_outlined),
-                      ),
-                      revealMode: PasswordRevealMode.visible,
-                    ),
-                    spacer,
-                    Text('Password', style: FluentTheme.of(context).typography.subtitle),
-                    PasswordBox(
-                      controller: _passwordController,
-                      revealMode: PasswordRevealMode.peekAlways,
-                      leadingIcon: const Padding(
-                        padding: EdgeInsets.only(left: 8.0),
-                        child: Icon(mat.Icons.lock_outlined),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        FilledButton(
-                          child: Text('Conferma'),
-                          onPressed: () {
-                            setState(() {
-                              Manager.password = _passwordController.text.trim();
-                              Manager.sourceMail = _emailController.text.trim();
-                            });
-                            SettingsManager.saveSettings({'password': Manager.password, 'sourceMail': Manager.sourceMail});
-                            snackBar(
-                              'Credenziali impostate correttamente',
-                              severity: InfoBarSeverity.success,
-                            );
-                          },
-                        )
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
-            const Expanded(child: SizedBox.shrink())
-          ],
-        ),
-        biggerSpacer,
-        biggerSpacer,
         /*Text('Tema', style: FluentTheme.of(context).typography.subtitle),
         spacer,
         ...List.generate(ThemeMode.values.length, (index) {
@@ -312,6 +246,26 @@ class _SettingsState extends State<Settings> with PageMixin {
           ),
         ),*/
         biggerSpacer,
+        Card(
+          child: Row(children: [
+            const Text('Cancella Cache'),
+            const Spacer(),
+            FilledButton(
+              onPressed: () async {
+                SettingsManager.clearSettings();
+                setState(() {
+                  needsToRestart = true;
+                });
+              },
+              child: const Text('Cancella Cache'),
+            ),
+          ]),
+        ),
+        if (needsToRestart) biggerSpacer,
+        if (needsToRestart)
+          Center(
+            child: Text("Restarta l'App", style: TextStyle(color: Colors.red)),
+          )
       ],
     );
   }
