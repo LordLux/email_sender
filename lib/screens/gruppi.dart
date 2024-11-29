@@ -28,6 +28,7 @@ final GlobalKey<FormState> extraRecipientsFormKey = GlobalKey<FormState>();
 class _MailingListsState extends State<MailingLists> with PageMixin {
   bool isHighlighted = false;
   bool isHighlighted2 = false;
+  bool appearButtons = false;
 
   void changeMultiSelection(bool value) {
     setState(() {
@@ -53,12 +54,12 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
     super.initState();
     loadData();
   }
-  
+
   @override
   void dispose() {
     super.dispose();
-    Manager.extraRecNameController.dispose();
-    Manager.extraRecEmailController.dispose();
+    //Manager.extraRecNameController.dispose();
+    //Manager.extraRecEmailController.dispose();
   }
 
   @override
@@ -256,14 +257,15 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                                 ? <Widget>[
                                     for (final recipient in Manager.extraRecipients)
                                       recipientChip(
-                                        recipient['name'] ?? '',
-                                        recipient['email']!,
-                                        FluentTheme.of(context).accentColor,
-                                        () {
-                                          if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) infoBadge("/gruppi", null);
-                                          setState(() {});
-                                        },
-                                      ) ?? const SizedBox(),
+                                            recipient['name'] ?? '',
+                                            recipient['email']!,
+                                            FluentTheme.of(context).accentColor,
+                                            () {
+                                              if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) infoBadge("/gruppi", null);
+                                              setState(() {});
+                                            },
+                                          ) ??
+                                          const SizedBox(),
                                   ]
                                 : [])),
                   ),
@@ -286,6 +288,9 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                           const SizedBox(height: 8),
                           TextFormBox(
                             controller: Manager.extraRecNameController,
+                            onChanged: (value) => setState(() {
+                              appearButtons = Manager.extraRecEmailController.text.isNotEmpty || Manager.extraRecNameController.text.isNotEmpty;
+                            }),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) return 'Inserisci il nome del destinatario';
                               print('value: "${value.trim()}", ${value.trim().length}');
@@ -297,6 +302,9 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                           TextFormBox(
                             controller: Manager.extraRecEmailController,
                             placeholder: 'Email',
+                            onChanged: (value) => setState(() {
+                              appearButtons = Manager.extraRecEmailController.text.isNotEmpty || Manager.extraRecNameController.text.isNotEmpty;
+                            }),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) return 'Inserisci un\'email';
                               if (!EmailValidator.validate(value)) return 'Inserisci un\'email valida';
@@ -304,60 +312,61 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                             },
                           ),
                           const SizedBox(height: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Button(
-                                  child: const Text('Annulla'),
+                          if (appearButtons)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Button(
+                                    child: const Text('Annulla'),
+                                    onPressed: () {
+                                      Manager.extraRecNameController.clear();
+                                      Manager.extraRecEmailController.clear();
+                                    }),
+                                const SizedBox(width: 8),
+                                FilledButton(
                                   onPressed: () {
-                                    Manager.extraRecNameController.clear();
-                                    Manager.extraRecEmailController.clear();
-                                  }),
-                              const SizedBox(width: 8),
-                              FilledButton(
-                                onPressed: () {
-                                  if (extraRecipientsFormKey.currentState!.validate()) {
-                                    extraRecipientsFormKey.currentState!.save();
-                                    if (Manager.extraRecEmailController.text.trim().isEmpty) return;
-                                    try {
-                                      final String name;
-                                      if (Manager.extraRecNameController.text.length > 2)
-                                        name = Manager.extraRecNameController.text.split(" ").map((e) => '${e[0].toUpperCase()}${e.substring(1)}').join(" ");
-                                      else
-                                        name = Manager.extraRecNameController.text.titleCase;
+                                    if (extraRecipientsFormKey.currentState!.validate()) {
+                                      extraRecipientsFormKey.currentState!.save();
+                                      if (Manager.extraRecEmailController.text.trim().isEmpty) return;
+                                      try {
+                                        final String name;
+                                        if (Manager.extraRecNameController.text.length > 2)
+                                          name = Manager.extraRecNameController.text.split(" ").map((e) => '${e[0].toUpperCase()}${e.substring(1)}').join(" ");
+                                        else
+                                          name = Manager.extraRecNameController.text.titleCase;
 
-                                      final Map<String, String> extraRec = {
-                                        'name': name,
-                                        'email': Manager.extraRecEmailController.text.trim(),
-                                      };
+                                        final Map<String, String> extraRec = {
+                                          'name': name,
+                                          'email': Manager.extraRecEmailController.text.trim(),
+                                        };
 
-                                      // Check if the email is already in the list
-                                      final existingRecIndex = Manager.extraRecipients.indexWhere((rec) => rec['email'] == extraRec['email']);
-                                      if (existingRecIndex != -1) {
-                                        // If the name is different, update it
-                                        if (Manager.extraRecipients[existingRecIndex]['name'] != extraRec['name']) //
-                                          Manager.extraRecipients[existingRecIndex] = extraRec;
-                                      } else // Otherwise, add the new recipient
-                                        Manager.extraRecipients.add(extraRec);
-                                    } catch (e) {
-                                      print(e);
-                                      snackBar('Errore durante l\'aggiunta del destinatario:\n${e.toString()}', severity: InfoBarSeverity.error, hasError: true);
-                                    }
-                                    /*snackBar(
+                                        // Check if the email is already in the list
+                                        final existingRecIndex = Manager.extraRecipients.indexWhere((rec) => rec['email'] == extraRec['email']);
+                                        if (existingRecIndex != -1) {
+                                          // If the name is different, update it
+                                          if (Manager.extraRecipients[existingRecIndex]['name'] != extraRec['name']) //
+                                            Manager.extraRecipients[existingRecIndex] = extraRec;
+                                        } else // Otherwise, add the new recipient
+                                          Manager.extraRecipients.add(extraRec);
+                                      } catch (e) {
+                                        print(e);
+                                        snackBar('Errore durante l\'aggiunta del destinatario:\n${e.toString()}', severity: InfoBarSeverity.error, hasError: true);
+                                      }
+                                      /*snackBar(
                                     'Destinatario${name.isNotEmpty ? " $name " : " "}aggiunto con successo',
                                     severity: InfoBarSeverity.success,
                                   );*/
-                                    Manager.extraRecNameController.clear();
-                                    Manager.extraRecEmailController.clear();
+                                      Manager.extraRecNameController.clear();
+                                      Manager.extraRecEmailController.clear();
 
-                                    infoBadge("/gruppi", true);
-                                    setState(() {});
-                                  }
-                                },
-                                child: const Text('Aggiungi'),
-                              ),
-                            ],
-                          ),
+                                      infoBadge("/gruppi", true);
+                                      setState(() {});
+                                    }
+                                  },
+                                  child: const Text('Aggiungi'),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),

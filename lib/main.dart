@@ -380,6 +380,16 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     if (context.mounted) Navigator.of(context).pop();
     db.EmailDatabase().close();
     await windowManager.destroy();
+    showDialog(
+      barrierDismissible: false,
+      dismissWithEsc: false,
+      context: context,
+      builder: (_) {
+        return ContentDialog(
+          content: const Text("Chiusura in corso..."),
+        );
+      },
+    );
   }
 }
 
@@ -466,10 +476,6 @@ final router = GoRouter(
   ],
 );
 //mocv zuqy cfvy emck
-//TODO add 'closing' screen when closing the app
-//TODO add  tooltip warning for empty uffici
-//TODO intercept 'Invalid Message' error when sending email with no recipients
-//TODO show 'annulla' and 'aggiungi' only when nome/email controllers not empty
 //TODO change Visual Name of the app
 
 //TODO check fix for acrylic not starting correctly sometimes

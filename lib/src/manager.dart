@@ -80,7 +80,7 @@ class Manager {
 
       // Read headers from the first row
       final List<String> headers = [];
-      final int totalColumns = sheet.maxCols;
+      final int totalColumns = sheet.maxColumns;
       for (int col = 0; col < totalColumns; col++) {
         final cellValue = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0)).value;
         if (cellValue == null || cellValue.toString().trim().isEmpty) break;

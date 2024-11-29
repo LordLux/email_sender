@@ -83,10 +83,21 @@ class _HomePageState extends State<HomePage> with PageMixin {
                 ),
                 message: 'Portami alla mia casella di posta su Gmail',
                 child: IconButton(
-                  icon: Image.network(
-                    "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/320px-Gmail_icon_%282020%29.svg.png",
-                    width: 24,
-                    height: 24,
+                  style: ButtonStyle(
+                    //foregroundColor: WidgetStatePropertyAll(FluentTheme.of(context).accentColor),
+                    backgroundColor: WidgetStatePropertyAll(FluentTheme.of(context).accentColor.withOpacity(.35)),
+                  ),
+                  icon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Portami alla mia casella di posta su Gmail'),
+                      const SizedBox(width: 8),
+                      Image.network(
+                        "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/320px-Gmail_icon_%282020%29.svg.png",
+                        width: 24,
+                        height: 24,
+                      ),
+                    ],
                   ),
                   onPressed: open,
                 ),
@@ -185,7 +196,7 @@ class _HomePageState extends State<HomePage> with PageMixin {
                               itemCount: emails.length,
                               itemBuilder: (context, index) {
                                 const int n = 5;
-                                final db.Email mail = emails[index];
+                                final db.Email mail = emails[emails.length - 1 - index];
                                 final List<Ufficio> uffici = db.parseUffici(mail.uffici);
                                 final recipients = db.parseRecipients(mail.recipients);
                                 final List<String> recipientMails = recipients.$1.take(n).toList();

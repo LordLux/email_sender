@@ -53,10 +53,10 @@ packages:
     dependency: transitive
     description:
       name: cli_util
-      sha256: "66f86e916d285c1a93d3b79587d94bd71984a66aac4ff74e524cfa7877f1395c"
+      sha256: ff6785f7e9e3c38ac98b2fb035701789de90154024a75b6cb926445e83197d1c
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.5"
+    version: "0.4.2"
   clock:
     dependency: transitive
     description:
@@ -125,18 +125,18 @@ packages:
     dependency: transitive
     description:
       name: equatable
-      sha256: c2b87cb7756efdf69892005af546c56c0b5037f54d2a88269b4f347a505e3ca2
+      sha256: "567c64b3cb4cf82397aac55f4f0cbd3ca20d77c6c03bedbc4ceaddc08904aef7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.5"
+    version: "2.0.7"
   excel:
     dependency: "direct main"
     description:
       name: excel
-      sha256: f6a76fff6ac14f48fd44a6528e72705965e02cbc593e00427ab1d9a9f5d3bffa
+      sha256: "1a15327dcad260d5db21d1f6e04f04838109b39a2f6a84ea486ceda36e468780"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "4.0.6"
   fake_async:
     dependency: transitive
     description:
@@ -165,10 +165,10 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: be325344c1f3070354a1d84a231a1ba75ea85d413774ec4bdf444c023342e030
+      sha256: "16dc141db5a2ccc6520ebb6a2eb5945b1b09e95085c021d9f914f8ded7f1465c"
       url: "https://pub.dev"
     source: hosted
-    version: "5.5.0"
+    version: "8.1.4"
   fluent_ui:
     dependency: "direct main"
     description:
@@ -202,18 +202,18 @@ packages:
     dependency: "direct dev"
     description:
       name: flutter_launcher_icons
-      sha256: a9de6706cd844668beac27c0aed5910fa0534832b3c2cad61a5fd977fce82a5d
+      sha256: "619817c4b65b322b5104b6bb6dfe6cda62d9729bd7ad4303ecc8b4e690a67a77"
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.14.1"
   flutter_lints:
     dependency: "direct dev"
     description:
       name: flutter_lints
-      sha256: "3f41d009ba7172d5ff9be5f6e6e6abb4300e263aab8866d2a0842ed2a70f8f0c"
+      sha256: "5398f14efa795ffb7a33e9b6a08798b26a180edac4ad7db3f231e40f82ce11e1"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "5.0.0"
   flutter_localizations:
     dependency: transitive
     description: flutter
@@ -231,10 +231,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_svg
-      sha256: "936d9c1c010d3e234d1672574636f3352b4941ca3decaddd3cafaeb9ad49c471"
+      sha256: "54900a1a1243f3c4a5506d853a2b5c2dbc38d5f27e52a52618a8054401431123"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.15"
+    version: "2.0.16"
   flutter_syntax_view:
     dependency: "direct main"
     description:
@@ -257,10 +257,10 @@ packages:
     dependency: "direct main"
     description:
       name: go_router
-      sha256: "8ae664a70174163b9f65ea68dd8673e29db8f9095de7b5cd00e167c621f4fef5"
+      sha256: "8660b74171fafae4aa8202100fa2e55349e078281dadc73a241eb8e758534d9d"
       url: "https://pub.dev"
     source: hosted
-    version: "14.6.0"
+    version: "14.6.1"
   google_fonts:
     dependency: "direct main"
     description:
@@ -297,10 +297,10 @@ packages:
     dependency: transitive
     description:
       name: image
-      sha256: "8e9d133755c3e84c73288363e6343157c383a0c6c56fc51afcc5d4d7180306d6"
+      sha256: f31d52537dc417fdcde36088fdf11d191026fd5e4fae742491ebd40e5a8bea7d
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "4.3.0"
   intl:
     dependency: "direct main"
     description:
@@ -353,10 +353,10 @@ packages:
     dependency: transitive
     description:
       name: lints
-      sha256: "976c774dd944a42e83e2467f4cc670daef7eed6295b10b36ae8c85bcbf828235"
+      sha256: "3315600f3fb3b135be672bf4a178c55f274bebe368325ae18462c89ac1e3b413"
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.0"
+    version: "5.0.0"
   list_counter:
     dependency: transitive
     description:
@@ -409,10 +409,10 @@ packages:
     dependency: "direct main"
     description:
       name: material_symbols_icons
-      sha256: "1dea2aef1c83434f832f14341a5ffa1254e76b68e4d90333f95f8a2643bf1024"
+      sha256: a783133f87c58e10b1cc19797f7c3192ff9c2bab301c4ade90312d8f2aed01b2
       url: "https://pub.dev"
     source: hosted
-    version: "4.2799.0"
+    version: "4.2800.2"
   math_expressions:
     dependency: transitive
     description:
@@ -545,10 +545,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: c464428172cb986b758c6d1724c603097febb8fb855aa265aeecc9280c294d4a
+      sha256: "8c4967f8b7cb46dc914e178daa29813d83ae502e0529d7b0478330616a691ef7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.12"
+    version: "2.2.14"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -798,10 +798,10 @@ packages:
     dependency: transitive
     description:
       name: sqlite3
-      sha256: bb174b3ec2527f9c5f680f73a89af8149dd99782fbb56ea88ad0807c5638f2ed
+      sha256: cb7f4e9dc1b52b1fa350f7b3d41c662e75fc3d399555fa4e5efcf267e9a4fbb5
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.7"
+    version: "2.5.0"
   stack_trace:
     dependency: transitive
     description:
@@ -830,34 +830,34 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: "225b1cc135549bb4eef096d63b7323c30ee61c4b095c7e8a14bf9333e243d84b"
+      sha256: "795530addc930b3b06f4f2fe99a039de276860af505fcf54c4516fbcb838a3cb"
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.2"
+    version: "27.2.4"
   syncfusion_flutter_datagrid:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datagrid
-      sha256: "6db8e5828dcc65f603a948cc28beb07c506654a4cf22a490924eb568c944d344"
+      sha256: "028b18700fb0f11dc9bfc29f56f5586112728443c8d3f251a050212b0e4bf3cd"
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.2"
+    version: "27.2.4"
   syncfusion_flutter_xlsio:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_xlsio
-      sha256: "21b810d67aa901b211763a59befa43f89e8f64ac68717273d8bfbc56d7bd30ca"
+      sha256: "844f71bee73b787beb15ff006232f6b0dde6adbbe126ce2287fd4e90e1cb43c8"
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.2"
+    version: "27.2.4"
   syncfusion_officecore:
     dependency: transitive
     description:
       name: syncfusion_officecore
-      sha256: "70395aa72fc18727d3be902765bed45447d9198aedc19dde703926dcf9a795b5"
+      sha256: ed3e9c014d9d87361fe2465d71ee7b1436a15c261a08e4f508e9e2f3066bafb8
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.2"
+    version: "27.2.4"
   synchronized:
     dependency: transitive
     description:
@@ -990,10 +990,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: ab9ff38fc771e9ee1139320adbe3d18a60327370c218c60752068ebee4b49ab1
+      sha256: "1b4b9e706a10294258727674a340ae0d6e64a7231980f9f9a3d12e4b42407aad"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.15"
+    version: "1.1.16"
   vector_math:
     dependency: transitive
     description:

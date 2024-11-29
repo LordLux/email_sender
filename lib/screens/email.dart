@@ -90,7 +90,7 @@ class _EmailState extends State<Email> with PageMixin {
       setState(() {});
     });
   }
-  
+
   @override
   void dispose() {
     _focusNode.dispose();
