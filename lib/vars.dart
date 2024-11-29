@@ -11,90 +11,141 @@ const biggerSpacer = SizedBox(height: 40.0);
 
 TextStyle get headerStyle => const TextStyle(fontWeight: FontWeight.w600, fontSize: 16);
 
-Widget recipientChip(String name, String email, Color color, VoidCallback setStateCallback, [bool deleteable = true]) {
+TextSpan richTooltipRecipient(String name, String email, [bool remaining = false]) {
+  return (name.isNotEmpty)
+      ? TextSpan(
+          children: [
+            TextSpan(text: remaining ? "· $name" : name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: remaining ? ' - ' : '\n'),
+            TextSpan(text: email),
+            if (remaining) const TextSpan(text: '\n'),
+          ],
+        )
+      : TextSpan(text: remaining ? "\n$email" : email);
+}
+
+Widget? recipientChip(String name, String email, Color color, VoidCallback setStateCallback, [bool deleteable = true, bool copiable = true]) {
+  if (email.isEmpty) return null;
+  
   final String clipboardText = "${name.isNotEmpty ? name : email}${name.isNotEmpty ? " - $email" : ""}";
-  return GestureDetector(
-    onTap: () => copyToClipboard(clipboardText),
-    onSecondaryTap: () => copyToClipboard(clipboardText),
-    child: LayoutBuilder(builder: (context, constraints) {
-      return fluent.Tooltip(
-        useMousePosition: false,
-        style: const fluent.TooltipThemeData(
-          //maxWidth: 500,
-          preferBelow: true,
-          waitDuration: Duration.zero,
-        ),
-        richMessage: (name.isNotEmpty)
-            ? TextSpan(
-                children: [
-                  TextSpan(text: name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const TextSpan(text: '\n'),
-                  TextSpan(text: email),
-                ],
-              )
-            : TextSpan(text: email),
-        child: (deleteable)
-            ? Chip(
-                side: BorderSide(color: color),
-                color: WidgetStatePropertyAll(color.withOpacity(.25)),
-                padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
-                label: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.person),
-                    const SizedBox(width: 8.0),
-                    Text(ellipsizeText(name.isNotEmpty ? name : email, constraints.maxWidth - 150)),
-                  ],
-                ),
-                onDeleted: () {
-                  Manager.extraRecipients.removeWhere((element) => element['email'] == email);
-                  setStateCallback();
-                },
-              )
-            : RawChip(
-                side: BorderSide(color: color),
-                color: WidgetStatePropertyAll(color.withOpacity(.25)),
-                padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
-                label: Text(name),
-              ),
+  color = color.lerpWith(Colors.white, .5);
+
+  Widget chip = LayoutBuilder(builder: (context, constraints) {
+    return Builder(builder: (context) {
+      final Widget label = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.person, color: Colors.white.withOpacity(.85)),
+          const SizedBox(width: 8.0),
+          Text(ellipsizeText(name.isNotEmpty ? name : email, constraints.maxWidth - 150), style: TextStyle(color: Colors.white.withOpacity(.85))),
+        ],
       );
-    }),
+      if (deleteable)
+        return Chip(
+          side: BorderSide(color: color),
+          color: WidgetStatePropertyAll(color.withOpacity(.25)),
+          padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+          label: label,
+          onDeleted: () {
+            Manager.extraRecipients.removeWhere((element) => element['email'] == email);
+            setStateCallback();
+          },
+        );
+      return RawChip(
+        side: BorderSide(color: color),
+        color: WidgetStatePropertyAll(color.withOpacity(.25)),
+        padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+        label: label,
+      );
+    });
+  });
+  return fluent.Tooltip(
+    useMousePosition: false,
+    style: const fluent.TooltipThemeData(
+      //maxWidth: 500,
+      preferBelow: true,
+      waitDuration: Duration.zero,
+    ),
+    richMessage: richTooltipRecipient(name, email),
+    child: Builder(
+      builder: (context) {
+        if (copiable)
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => copiable ? copyToClipboard(clipboardText) : null,
+            onSecondaryTap: () => copiable ? copyToClipboard(clipboardText) : null,
+            child: chip,
+          );
+        return IgnorePointer(ignoring: true, child: chip);
+      },
+    ),
   );
 }
 
-Widget ufficioChip(Ufficio ufficio, Color color, VoidCallback setStateCallback) {
-  return LayoutBuilder(builder: (context, constraints) {
-    return fluent.Tooltip(
-        useMousePosition: false,
-        style: const fluent.TooltipThemeData(
-          //maxWidth: 500,
-          preferBelow: true,
-          waitDuration: Duration.zero,
-        ),
-        richMessage: TextSpan(
-          children: [
-            TextSpan(text: ufficio.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: ' (${ufficio.entries.length} destinatari)\n', style: TextStyle(color: Colors.white.withOpacity(.5))),
-            TextSpan(text: ufficio.entries.map((e) => "${e[1]} - ${e[2]}").join('\n')),
-          ],
-        ),
-        child: Chip(
+TextSpan richTooltipUfficio(Ufficio ufficio, [bool remaining = false]) {
+  return TextSpan(
+    children: [
+      TextSpan(text: remaining ? '· ${ufficio.nome}' : ufficio.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
+      TextSpan(text: ' (${ufficio.entries.length} destinatari)\n    ', style: TextStyle(color: Colors.white.withOpacity(.5))),
+      TextSpan(text: ufficio.entries.map((e) => "${e[1]} - ${e[2]}").join('\n    ')),
+      if (remaining) const TextSpan(text: '\n'),
+    ],
+  );
+}
+
+Widget ufficioChip(Ufficio ufficio, Color color, VoidCallback setStateCallback, [bool deleteable = true, bool copiable = true]) {
+  final String clipboardText = "${ufficio.nome}\n - ${ufficio.entries.map((e) => "${e[1]} - ${e[2]}").join('\n - ')}";
+
+  Widget chip = LayoutBuilder(builder: (context, constraints) {
+    return Builder(builder: (context) {
+      final Widget label = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.groups),
+          const SizedBox(width: 8.0),
+          Text(ellipsizeText(ufficio.nome, constraints.maxWidth - 110), style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      );
+      if (deleteable)
+        return Chip(
           side: BorderSide(color: color),
           color: WidgetStatePropertyAll(color.withOpacity(.25)),
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.groups),
-              const SizedBox(width: 8.0),
-              Text(ellipsizeText(ufficio.nome, constraints.maxWidth - 110)),
-            ],
-          ),
+          padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+          label: label,
           onDeleted: () {
             Manager.selectedGroups.removeWhere((element) => element.hash == ufficio.hash);
             setStateCallback();
           },
-        ));
+        );
+      return RawChip(
+        side: BorderSide(color: color),
+        color: WidgetStatePropertyAll(color.withOpacity(.25)),
+        padding: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+        label: label,
+      );
+    });
   });
+  return fluent.Tooltip(
+    useMousePosition: false,
+    style: const fluent.TooltipThemeData(
+      //maxWidth: 500,
+      preferBelow: true,
+      waitDuration: Duration.zero,
+    ),
+    richMessage: richTooltipUfficio(ufficio),
+    child: Builder(
+      builder: (context) {
+        if (copiable)
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => copiable ? copyToClipboard(clipboardText) : null,
+            onSecondaryTap: () => copiable ? copyToClipboard(clipboardText) : null,
+            child: chip,
+          );
+        return IgnorePointer(ignoring: true, child: chip);
+      },
+    ),
+  );
 }
 
 String get firma => '''

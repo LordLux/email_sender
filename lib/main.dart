@@ -54,7 +54,7 @@ void main() async {
   //
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
-  db.EmailDatabase().cleanDatabase();
+  //db.EmailDatabase().cleanDatabase();
 
   SettingsManager.settings = await SettingsManager.loadSettings();
 
@@ -116,15 +116,28 @@ class MyApp extends StatelessWidget {
                   builder: (context) => Overlay(
                     initialEntries: [
                       OverlayEntry(
-                        builder: (context) => Directionality(
-                          textDirection: appTheme.textDirection,
-                          child: NavigationPaneTheme(
-                            data: NavigationPaneThemeData(
-                              backgroundColor: appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled ? Colors.transparent : null,
-                            ),
-                            child: child ?? const SizedBox.shrink(),
-                          ),
-                        ),
+                        builder: (context) => mat.ValueListenableBuilder(
+                            valueListenable: overlayEntry,
+                            builder: (context, overlay, _) {
+                              return Container(
+                                color: Colors.black.withOpacity(.5),
+                                child: GestureDetector(
+                                  behavior: overlay != null ? HitTestBehavior.opaque : HitTestBehavior.translucent,
+                                  onTap: () {
+                                    removeOverlay();
+                                  },
+                                  child: Directionality(
+                                    textDirection: appTheme.textDirection,
+                                    child: NavigationPaneTheme(
+                                      data: NavigationPaneThemeData(
+                                        backgroundColor: appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled ? Colors.transparent : null,
+                                      ),
+                                      child: child ?? const SizedBox.shrink(),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
                       ),
                     ],
                   ),
@@ -264,10 +277,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       if (Manager.excelPath != null) {
         File file = File(Manager.excelPath!);
         if (file.existsSync()) await Manager.loadExcel();
+        checkEmails(Manager.uffici, context, () => setState(() {}));
       }
-
+      await Future.delayed(const Duration(milliseconds: 100));
       if (Manager.sourceMail.isEmpty || Manager.sourcePassword == null || Manager.sourcePassword!.isEmpty) {
-        print('Credenziali non impostate');
         infoBadge('/credentials', false);
         setState(() {});
       }
@@ -312,45 +325,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       key: viewKey,
       appBar: NavigationAppBar(
         automaticallyImplyLeading: false,
-        /*leading: () {
-          final enabled = widget.shellContext != null && router.canPop();
-
-          final onPressed = enabled
-              ? () {
-                  if (router.canPop()) {
-                    context.pop();
-                    setState(() {});
-                  }
-                }
-              : null;
-          return NavigationPaneTheme(
-            data: NavigationPaneTheme.of(context).merge(NavigationPaneThemeData(
-              unselectedIconColor: WidgetStateProperty.resolveWith((states) {
-                if (states.isDisabled) {
-                  return ButtonThemeData.buttonColor(context, states);
-                }
-                return ButtonThemeData.uncheckedInputColor(
-                  FluentTheme.of(context),
-                  states,
-                ).basedOnLuminance();
-              }),
-            )),
-            child: Builder(
-              builder: (context) => PaneItem(
-                icon: const Center(child: Icon(FluentIcons.back, size: 12.0)),
-                title: Text(localizations.backButtonTooltip),
-                body: const SizedBox.shrink(),
-                enabled: enabled,
-              ).build(
-                context,
-                false,
-                onPressed,
-                displayMode: PaneDisplayMode.compact,
-              ),
-            ),
-          );
-        }(),
-        */
         title: () {
           if (kIsWeb) {
             return const Align(
@@ -366,25 +340,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           );
         }(),
         actions: const Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          /*Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8.0),
-              child: ToggleSwitch(
-                content: const Text('Tema Scuro'),
-                checked: FluentTheme.of(context).brightness.isDark,
-                onChanged: (v) {
-                  if (appTheme.windowEffect != flutter_acrylic.WindowEffect.disabled) return;
-
-                  if (v) {
-                    appTheme.mode = ThemeMode.dark;
-                  } else {
-                    appTheme.mode = ThemeMode.light;
-                  }
-                },
-              ),
-            ),
-          ),*/
           if (!kIsWeb) WindowButtons(),
         ]),
       ),
@@ -408,54 +363,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           }
         }(),
         items: originalItems,
-        /*autoSuggestBox: Builder(builder: (context) {
-          return AutoSuggestBox(
-            key: searchKey,
-            focusNode: searchFocusNode,
-            controller: searchController,
-            unfocusedColor: Colors.transparent,
-            // also need to include sub items from [PaneItemExpander] items
-            items: <PaneItem>[
-              ...originalItems.whereType<PaneItemExpander>().expand<PaneItem>((item) {
-                return [
-                  item,
-                  ...item.items.whereType<PaneItem>(),
-                ];
-              }),
-              ...originalItems
-                  .where(
-                    (item) => item is PaneItem && item is! PaneItemExpander,
-                  )
-                  .cast<PaneItem>(),
-            ].map((item) {
-              assert(item.title is Text);
-              final text = (item.title as Text).data!;
-              return AutoSuggestBoxItem(
-                label: text,
-                value: text,
-                onSelected: () {
-                  item.onTap?.call();
-                  searchController.clear();
-                  searchFocusNode.unfocus();
-                  final view = NavigationView.of(context);
-                  if (view.compactOverlayOpen) {
-                    view.compactOverlayOpen = false;
-                  } else if (view.minimalPaneOpen) {
-                    view.minimalPaneOpen = false;
-                  }
-                },
-              );
-            }).toList(),
-            trailingIcon: IgnorePointer(
-              child: IconButton(
-                onPressed: () {},
-                icon: const Icon(FluentIcons.search),
-              ),
-            ),
-            placeholder: 'Ricerca',
-          );
-        }),
-        autoSuggestBoxReplacement: const Icon(FluentIcons.search),*/
         footerItems: footerItems,
       ),
       onOpenSearch: searchFocusNode.requestFocus,
@@ -470,33 +377,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowClose() async {
-    bool isPreventClose = await windowManager.isPreventClose();
-    if (isPreventClose && mounted) {
-      showDialog(
-        context: context,
-        builder: (_) {
-          return ContentDialog(
-            title: const Text('Conferma Chiusura'),
-            content: const Text("Sei sicuro di voler chiudere l'applicazione?"),
-            actions: [
-              FilledButton(
-                child: const Text('Si'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  windowManager.destroy();
-                },
-              ),
-              Button(
-                child: const Text('No'),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
+    if (context.mounted) Navigator.of(context).pop();
+    db.EmailDatabase().close();
+    await windowManager.destroy();
   }
 }
 
@@ -521,43 +404,72 @@ class WindowButtons extends StatelessWidget {
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<_MyHomePageState> myHomePageKey = GlobalKey<_MyHomePageState>();
-final router = GoRouter(navigatorKey: rootNavigatorKey, routes: [
-  ShellRoute(
-    navigatorKey: _shellNavigatorKey,
-    builder: (context, state, child) {
-      return MyHomePage(
-        key: myHomePageKey,
-        shellContext: _shellNavigatorKey.currentContext,
-        child: child,
-      );
-    },
-    routes: <GoRoute>[
-      /// Home
-      GoRoute(path: '/', builder: (context, state) => HomePage(key: homePageKey)),
+final router = GoRouter(
+  navigatorKey: rootNavigatorKey,
+  routes: [
+    ShellRoute(
+      navigatorKey: _shellNavigatorKey,
+      builder: (context, state, child) {
+        return MyHomePage(
+          key: myHomePageKey,
+          shellContext: _shellNavigatorKey.currentContext,
+          child: child,
+        );
+      },
+      routes: <GoRoute>[
+        /// Home
+        GoRoute(path: '/', builder: (context, state) => HomePage(key: homePageKey)),
 
-      /// Excel
-      GoRoute(path: '/excel', builder: (context, state) => ExcelScreen(key: excelKey)),
+        /// Excel
+        GoRoute(
+            path: '/excel',
+            builder: (context, state) {
+              removeOverlay();
+              return ExcelScreen(key: excelKey);
+            }),
 
-      // Gruppi
-      GoRoute(path: '/gruppi', builder: (context, state) => MailingLists(key: gruppiKey)),
+        // Gruppi
+        GoRoute(
+            path: '/gruppi',
+            builder: (context, state) {
+              removeOverlay();
+              return MailingLists(key: gruppiKey);
+            }),
 
-      //Email
-      GoRoute(path: '/email', builder: (context, state) => const Email()),
+        //Email
+        GoRoute(
+            path: '/email',
+            builder: (context, state) {
+              removeOverlay();
+              return const Email();
+            }),
 
-      /////////////////////
+        /////////////////////
 
-      /// Credentials
-      GoRoute(path: '/credentials', builder: (context, state) => const Credentials()),
+        /// Credentials
+        GoRoute(
+            path: '/credentials',
+            builder: (context, state) {
+              removeOverlay();
+              return const Credentials();
+            }),
 
-      /// Settings
-      GoRoute(path: '/settings', builder: (context, state) => const Settings()),
-    ],
-  ),
-]);
+        /// Settings
+        GoRoute(
+            path: '/settings',
+            builder: (context, state) {
+              removeOverlay();
+              return const Settings();
+            }),
+      ],
+    ),
+  ],
+);
+//mocv zuqy cfvy emck
+//TODO add 'closing' screen when closing the app
+//TODO add  tooltip warning for empty uffici
+//TODO intercept 'Invalid Message' error when sending email with no recipients
+//TODO show 'annulla' and 'aggiungi' only when nome/email controllers not empty
+//TODO change Visual Name of the app
 
-
-//TODO
-// fix dragNdrop.dart with XFile
-// handle file attachments
-// generate email
-// send email
+//TODO check fix for acrylic not starting correctly sometimes

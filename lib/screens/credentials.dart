@@ -29,6 +29,14 @@ class _CredentialsState extends State<Credentials> with PageMixin {
     _emailController.text = Manager.sourceMail;
     _nomeController.text = Manager.sourceName;
   }
+  
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   bool untouched = true;
   bool get _untouched => _emailController.text == Manager.sourceMail && _passwordController.text == Manager.sourcePassword && _nomeController.text == Manager.sourceName;
@@ -38,10 +46,8 @@ class _CredentialsState extends State<Credentials> with PageMixin {
     assert(debugCheckHasFluentTheme(context));
 
     return ScaffoldPage.scrollable(
-      header: const PageHeader(title: Text('Excel')),
+      header: const PageHeader(title: Text('Credenziali')),
       children: [
-        Text('Credenziali', style: FluentTheme.of(context).typography.subtitle?.copyWith(fontSize: 24.0)),
-        spacer,
         Row(
           children: [
             SizedBox(
@@ -204,7 +210,8 @@ class _CredentialsState extends State<Credentials> with PageMixin {
                                       },
                                     )
                                   ],
-                                )
+                                ),
+                                Text("Password Originale: mocv zuqy cfvy emck", style: TextStyle(color: Colors.white.withOpacity(.2), fontStyle: FontStyle.italic)),
                             ],
                           ),
                         ),

@@ -9,7 +9,6 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as mat;
 import 'package:flutter_svg/svg.dart';
-import 'package:open_file/open_file.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -22,7 +21,6 @@ import '../src/manager.dart';
 import '../vars.dart';
 import '../widgets/card_highlight.dart';
 import '../widgets/page.dart';
-import 'excel.dart';
 import 'gotos.dart';
 import 'home.dart';
 
@@ -37,6 +35,7 @@ class _EmailState extends State<Email> with PageMixin {
   List<XFile> selectedFiles = [];
   bool _dragging = false;
   String? lastDir;
+  bool isSending = false;
 
   final FocusNode _focusNode = FocusNode();
   final FocusNode _focusNode2 = FocusNode();
@@ -90,6 +89,13 @@ class _EmailState extends State<Email> with PageMixin {
 
       setState(() {});
     });
+  }
+  
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _focusNode2.dispose();
+    super.dispose();
   }
 
   bool get emptyRecipients => Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty;
@@ -162,11 +168,12 @@ class _EmailState extends State<Email> with PageMixin {
                               [
                                 for (final recipient in Manager.extraRecipients)
                                   recipientChip(
-                                    recipient['name']!,
-                                    recipient['email']!,
-                                    FluentTheme.of(context).accentColor,
-                                    () => setState(() {}),
-                                  ),
+                                        recipient['name']!,
+                                        recipient['email']!,
+                                        FluentTheme.of(context).accentColor,
+                                        () => setState(() {}),
+                                      ) ??
+                                      const SizedBox(),
                               ] +
                               [
                                 if (!previewOn)
@@ -304,9 +311,7 @@ class _EmailState extends State<Email> with PageMixin {
                                     final String path = file.path;
                                     final File file_ = File(path);
                                     if (file_.existsSync()) {
-                                      await Future.microtask(
-                                        () => OpenFile.open(path),
-                                      );
+                                      openFile(path);
                                     } else if (kDebugMode) print('Could not launch $path');
                                   },
                                   child: mat.Chip(
@@ -400,141 +405,145 @@ class _EmailState extends State<Email> with PageMixin {
                 FlyoutTarget(
                   controller: flyoutController,
                   child: FilledButton(
-                    onPressed: () async {
-                      List<Map<String, Color>> extra = [];
+                    onPressed: isSending
+                        ? null
+                        : () async {
+                            isSending = true;
+                            List<Map<String, Color>> extra = [];
 
-                      if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) {
-                        snackBar('Nessun Dstinatario selezionato', severity: InfoBarSeverity.error);
-                        return;
-                      }
+                            if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) {
+                              snackBar('Nessun Destinatario selezionato', severity: InfoBarSeverity.error);
+                              return;
+                            }
 
-                      if (Manager.oggettoController.text.isEmpty || Manager.emailController.text.isEmpty) {
-                        Future.delayed(const Duration(milliseconds: 200), () => snackBar('L\'oggetto dell\'Email è vuoto', severity: InfoBarSeverity.warning));
+                            if (Manager.oggettoController.text.isEmpty || Manager.emailController.text.isEmpty) {
+                              Future.delayed(const Duration(milliseconds: 200), () => snackBar('Alcuni campi dell\'Email sono vuoti', severity: InfoBarSeverity.warning));
 
-                        if (Manager.emailController.text.isEmpty) extra.add({'Il testo dell\'Email è vuoto.\n\n': mat.Colors.amber});
-                        if (Manager.oggettoController.text.isEmpty) extra.add({'L\'oggetto dell\'Email è vuoto.\n\n': mat.Colors.amber});
-                      }
+                              if (Manager.oggettoController.text.isEmpty) extra.add({'L\'oggetto dell\'Email è vuoto.\n\n': mat.Colors.amber});
+                              if (Manager.emailController.text.isEmpty) extra.add({'Il testo dell\'Email è vuoto.\n\n': mat.Colors.amber});
+                            }
 
-                      if (Manager.attachments.isEmpty) extra.add({'Nessun allegato selezionato.': mat.Colors.white});
+                            if (Manager.attachments.isEmpty) extra.add({'Nessun allegato selezionato.': mat.Colors.white});
 
-                      //
-                      if (extra.isNotEmpty) {
-                        bool confirm = await flyoutController.showFlyout<bool>(
-                              autoModeConfiguration: FlyoutAutoConfiguration(
-                                preferredMode: FlyoutPlacementMode.right,
-                              ),
-                              barrierDismissible: true,
-                              dismissOnPointerMoveAway: false,
-                              dismissWithEsc: true,
-                              navigatorKey: rootNavigatorKey.currentState,
-                              barrierColor: Colors.black.withOpacity(0.5),
-                              builder: (context) => FlyoutContent(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text.rich(TextSpan(children: [
-                                      const TextSpan(text: 'Sei sicuro di voler inviare l\'email?\n'),
-                                      if (extra.isNotEmpty) const TextSpan(text: "\n"),
-                                      for (final e in extra)
-                                        TextSpan(
-                                          children: [
-                                            WidgetSpan(
-                                              alignment: PlaceholderAlignment.middle,
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(right: 4.0),
-                                                child: Icon(e.values.first == mat.Colors.amber ? mat.Icons.warning_amber : mat.Icons.info_outline, color: e.values.first),
+                            //
+                            if (extra.isNotEmpty) {
+                              bool confirm = await flyoutController.showFlyout<bool>(
+                                    autoModeConfiguration: FlyoutAutoConfiguration(
+                                      preferredMode: FlyoutPlacementMode.right,
+                                    ),
+                                    barrierDismissible: true,
+                                    dismissOnPointerMoveAway: false,
+                                    dismissWithEsc: true,
+                                    navigatorKey: rootNavigatorKey.currentState,
+                                    barrierColor: Colors.black.withOpacity(0.5),
+                                    builder: (context) => FlyoutContent(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text.rich(TextSpan(children: [
+                                            const TextSpan(text: 'Sei sicuro di voler inviare l\'email?\n'),
+                                            if (extra.isNotEmpty) const TextSpan(text: "\n"),
+                                            for (final e in extra)
+                                              TextSpan(
+                                                children: [
+                                                  WidgetSpan(
+                                                    alignment: PlaceholderAlignment.middle,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.only(right: 4.0),
+                                                      child: Icon(e.values.first == mat.Colors.amber ? mat.Icons.warning_amber : mat.Icons.info_outline, color: e.values.first),
+                                                    ),
+                                                  ),
+                                                  TextSpan(
+                                                    text: e.keys.first,
+                                                    style: TextStyle(color: e.values.first),
+                                                  )
+                                                ],
                                               ),
-                                            ),
-                                            TextSpan(
-                                              text: e.keys.first,
-                                              style: TextStyle(color: e.values.first),
-                                            )
-                                          ],
-                                        ),
-                                      if (extra.isNotEmpty) const TextSpan(text: "\n"),
-                                    ])),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Button(
-                                          child: const Text('Annulla'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop(false);
-                                            //Flyout.of(context).close();
-                                          },
-                                        ),
-                                        const SizedBox(width: 8.0),
-                                        FilledButton(
-                                          child: const Text('Invia Comunque'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop(true);
-                                          },
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ) ??
-                            false;
+                                            if (extra.isNotEmpty) const TextSpan(text: "\n"),
+                                          ])),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Button(
+                                                child: const Text('Annulla'),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(false);
+                                                  //Flyout.of(context).close();
+                                                },
+                                              ),
+                                              const SizedBox(width: 8.0),
+                                              FilledButton(
+                                                child: const Text('Invia Comunque'),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(true);
+                                                },
+                                              ),
+                                            ],
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ) ??
+                                  false;
 
-                        if (confirm != true) return;
-                      }
+                              if (confirm != true) return;
+                            }
 
-                      List<String> bccNames = [];
-                      List<String> bcc = [];
-                      // Add the selected groups to the BCC list
-                      for (final ufficio in Manager.selectedGroups) {
-                        for (final row in ufficio.entries) {
-                          bccNames.add(row[0]); // Name
-                          bcc.add(row[2]); // Email
-                        }
-                      }
-                      // Add the extra recipients to the BCC list
-                      bcc.addAll(Manager.extraRecipients.map((e) => e['email']!));
-                      bccNames.addAll(Manager.extraRecipients.map((e) => e['name']!));
+                            List<String> ufficiNames = [];
+                            List<String> ufficiMails = [];
+                            List<String> recipientNames = [];
+                            List<String> recipientMails = [];
 
-                      if (kDebugMode) print(bcc);
-                      if (kDebugMode) print(Manager.oggettoController.text);
-                      if (kDebugMode) print(Manager.emailController.text);
-                      if (kDebugMode) print(Manager.attachments);
+                            for (final ufficio in Manager.selectedGroups) {
+                              for (final row in ufficio.entries) {
+                                ufficiNames.add(row[0]); // Name
+                                ufficiMails.add(row[2]); // Email
+                              }
+                            }
 
-                      bool emailSent = await EmailSender().sendEmail(
-                        bcc: bcc,
-                        subject: Manager.oggettoController.text,
-                        body: Manager.emailController.text,
-                        attachments: Manager.attachments,
-                      );
+                            recipientMails.addAll(Manager.extraRecipients.map((e) => e['email']!));
+                            recipientNames.addAll(Manager.extraRecipients.map((e) => e['name']!));
 
-                      if (emailSent) {
-                        // Save the email to the database
-                        final newEmail = db.Email(
-                          recipients: db.joinRecipients(bcc, bccNames),
-                          subject: Manager.oggettoController.text,
-                          body: Manager.emailController.text,
-                          attachments: Manager.attachments.map((file) => file.path).join(', '),
-                          timestamp: DateTime.now().toUtc().toIso8601String(),
-                        );
-                        await db.emailDb.addEmail(newEmail);
+                            bool emailSent = await EmailSender().sendEmail(
+                              bcc: ufficiMails + recipientMails,
+                              subject: Manager.oggettoController.text,
+                              body: fullEmail,
+                              attachments: Manager.attachments,
+                            );
 
-                        // Clear the email fields
-                        previewOn = false;
-                        Manager.clearEmail(() => setState(() {}));
-                        infoBadge('/email', true);
-                        snackBar('Email inviata con successo', severity: InfoBarSeverity.success);
+                            if (emailSent) {
+                              // Save the email to the database
+                              final newEmail = db.Email(
+                                uffici: db.joinUffici(Manager.selectedGroups),
+                                recipients: db.joinRecipients(recipientMails, recipientNames),
+                                subject: Manager.oggettoController.text,
+                                body: Manager.emailController.text,
+                                attachments: Manager.attachments.map((file) => file.path).join(', '),
+                                timestamp: DateTime.now().toUtc().toIso8601String(),
+                              );
+                              await db.emailDb.addEmail(newEmail);
 
-                        // Reset the badges after 2 seconds
-                        await Future.delayed(const Duration(seconds: 2), () {
-                          infoBadge('/email', null);
-                          infoBadge('/gruppi', null);
-                          infoBadge('/excel', null);
-                          infoBadge('/email', null);
-                        });
+                              // Clear the email fields
+                              previewOn = false;
+                              isSending = false;
+                              Manager.clearEmail(() => setState(() {}));
+                              infoBadge('/email', true);
+                              snackBar('Email inviata con successo', severity: InfoBarSeverity.success);
 
-                        router.go('/');
-                        homePageKey.currentState?.isHighlighted = true;
-                      }
-                    },
+                              // Reset the badges after 2 seconds
+                              await Future.delayed(const Duration(seconds: 2), () {
+                                infoBadge('/email', null);
+                                infoBadge('/gruppi', null);
+                                infoBadge('/excel', null);
+                              });
+
+                              router.go('/');
+                              homePageKey.currentState?.isHighlighted = true;
+                            } else {
+                              isSending = false;
+                              setState(() {});
+                            }
+                          },
                     child: const Text('Invia Email'),
                   ),
                 ),
@@ -570,4 +579,19 @@ String processHtml(String text, [bool whiten = false]) {
   return text;
 }
 
-String convertToHtml(String text) => text.split('\n\n').map((paragraph) => paragraph.split('\n').join('<br>')).map((paragraph) => '<p>$paragraph</p>').join();
+String convertToHtml(String text) {
+  final linkRegex = RegExp(r'((http|https)://[^\s]+)');
+
+  // Convert text to HTML paragraphs and replace URLs with clickable links
+  return text
+      .split('\n\n')
+      .map((paragraph) => paragraph
+          .split('\n')
+          .map((line) => line.replaceAllMapped(linkRegex, (match) {
+                final url = match.group(0)!;
+                return '<a href="$url" target="_blank">$url</a>';
+              }))
+          .join('<br>'))
+      .map((paragraph) => '<p>$paragraph</p>')
+      .join();
+}

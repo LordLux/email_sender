@@ -246,26 +246,29 @@ class _SettingsState extends State<Settings> with PageMixin {
           ),
         ),*/
         biggerSpacer,
-        Card(
-          child: Row(children: [
-            const Text('Cancella Cache'),
-            const Spacer(),
-            FilledButton(
-              onPressed: () async {
-                SettingsManager.clearSettings();
-                setState(() {
-                  needsToRestart = true;
-                });
-              },
-              child: const Text('Cancella Cache'),
-            ),
-          ]),
+        Text(
+          'Cache',
+          style: FluentTheme.of(context).typography.subtitle,
         ),
-        if (needsToRestart) biggerSpacer,
-        if (needsToRestart)
-          Center(
-            child: Text("Restarta l'App", style: TextStyle(color: Colors.red)),
-          )
+        description(
+          content: const Text(
+            'Cancella la Cache per ripristinare le impostazioni predefinite',
+          ),
+        ),
+        spacer,
+        Row(children: [
+          FilledButton(
+            onPressed: () async {
+              SettingsManager.clearSettings();
+              setState(() {
+                needsToRestart = true;
+              });
+            },
+            child: const Text('Cancella Cache'),
+          ),
+          if (needsToRestart) const SizedBox(width: 10.0),
+          if (needsToRestart) Text("Chiudi e riapri l'App", style: TextStyle(color: Colors.red))
+        ]),
       ],
     );
   }

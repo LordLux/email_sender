@@ -34,6 +34,8 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
   FlyoutController renameFlyoutController = FlyoutController();
   TextEditingController renameController = TextEditingController();
   bool isHighlighted = false;
+  ScrollController scrollController = ScrollController();
+  int highlightedErrorIndex = -1;
 
   int currentUfficioIndex = 0;
 
@@ -86,7 +88,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
   Future<void> reloadData() async {
     await Manager.loadExcel();
     data = Manager.uffici;
-    setState(() {});
+    checkEmails(data, context, () => setState(() {}));
   }
 
   Future<void> loadData() async {
@@ -104,12 +106,12 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
       await Manager.loadExcel(); // Reload data from the Excel file
       data = Manager.uffici; // Update the local data
       if (kDebugMode) print('File exists, loaded: \'${Manager.excelPath}\'');
-      infoBadge('/excel', true);
+      checkEmails(data, context, () => setState(() {}));
     } else {
       infoBadge('/excel', null);
       if (kDebugMode) print('File does not exist');
+      setState(() {});
     }
-    setState(() {});
   }
 
   @override
@@ -120,8 +122,16 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     else {
       noFile = false;
       data = Manager.uffici;
-      infoBadge('/excel', true, false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        checkEmails(data, context, () => setState(() {}));
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -129,7 +139,105 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
     assert(debugCheckHasFluentTheme(context));
 
     return ScaffoldPage.scrollable(
-      header: const PageHeader(title: Text('Excel')),
+      scrollController: scrollController,
+      header: Column(
+        children: [
+          const PageHeader(title: Text('Excel')),
+          if (!noFile)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Card(
+                child: mat.Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  //
+                  // FILE SELEZIONATO
+                  Flexible(child: Text('File selezionato: ${Manager.excelPath}')),
+                  mat.Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.end, children: [
+                    //
+                    // RICARICA
+                    FilledButton(
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(mat.Icons.restart_alt, size: 17),
+                            SizedBox(width: 4),
+                            Text('Ricarica Uffici'),
+                          ],
+                        ),
+                        onPressed: () => reloadData()),
+                    const SizedBox(width: 6),
+                    //
+                    // APRI
+                    FilledButton(
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(mat.Icons.edit, size: 17),
+                            SizedBox(width: 4),
+                            Text('Modifica Uffici'),
+                          ],
+                        ),
+                        onPressed: () => openFile(Manager.excelPath!)),
+                    const SizedBox(width: 6),
+                    //
+                    // CAMBIA FILE
+                    Button(
+                      onPressed: pickExcelFile,
+                      child: const Text('Cambia file'),
+                    ),
+                    /*const SizedBox(width: 6),*/
+                    //
+                    // RINOMINA
+                    /*FlyoutTarget(
+                        controller: renameFlyoutController,
+                        child: Button(
+                          child: const Text('Rinomina file'),
+                          onPressed: () {
+                            renameFlyoutController.showFlyout(
+                              autoModeConfiguration: FlyoutAutoConfiguration(
+                                preferredMode: FlyoutPlacementMode.left,
+                              ),
+                              barrierDismissible: true,
+                              dismissOnPointerMoveAway: false,
+                              dismissWithEsc: true,
+                              navigatorKey: rootNavigatorKey.currentState,
+                              builder: (context) {
+                                return FlyoutContent(
+                                  child: mat.Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Rinomina il file', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 12.0),
+                                      SizedBox(
+                                        width: 400.0,
+                                        child: TextBox(
+                                          autofocus: true,
+                                          controller: renameController,
+                                          placeholder: getFileNameFromPath(Manager.excelPath!),
+                                          inputFormatters: [
+                                            LengthLimitingTextInputFormatter(50),
+                                            FilteringTextInputFormatter.allow(RegExp(r'^[^<>:"/\\|?*\x00-\x1F]*$')),
+                                          ],
+                                          onSubmitted: (value) {
+                                            rename(value);
+                                            Flyout.of(context).close();
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ))*/
+                  ]),
+                ]),
+              ),
+            ),
+          spacer,
+        ],
+      ),
       children: [
         // SELEZIONA FILE
         if (noFile)
@@ -147,74 +255,6 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
               ]),
             ),
           ),
-        if (!noFile)
-          Card(
-            child: mat.Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              //
-              // FILE SELEZIONATO
-              Flexible(child: Text('File selezionato: ${Manager.excelPath}')),
-              mat.Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.end, children: [
-                //
-                // RICARICA
-                IconButton(icon: const Icon(mat.Icons.restart_alt, size: 17), onPressed: () => reloadData()),
-                const SizedBox(width: 6),
-                //
-                // CAMBIA FILE
-                FilledButton(
-                  onPressed: pickExcelFile,
-                  child: const Text('Cambia file'),
-                ),
-                const SizedBox(width: 6),
-                //
-                // RINOMINA
-                FlyoutTarget(
-                    controller: renameFlyoutController,
-                    child: Button(
-                      child: const Text('Rinomina file'),
-                      onPressed: () {
-                        renameFlyoutController.showFlyout(
-                          autoModeConfiguration: FlyoutAutoConfiguration(
-                            preferredMode: FlyoutPlacementMode.left,
-                          ),
-                          barrierDismissible: true,
-                          dismissOnPointerMoveAway: false,
-                          dismissWithEsc: true,
-                          navigatorKey: rootNavigatorKey.currentState,
-                          builder: (context) {
-                            return FlyoutContent(
-                              child: mat.Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Rinomina il file', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 12.0),
-                                  SizedBox(
-                                    width: 400.0,
-                                    child: TextBox(
-                                      autofocus: true,
-                                      controller: renameController,
-                                      placeholder: getFileNameFromPath(Manager.excelPath!),
-                                      inputFormatters: [
-                                        LengthLimitingTextInputFormatter(50),
-                                        FilteringTextInputFormatter.allow(RegExp(r'^[^<>:"/\\|?*\x00-\x1F]*$')),
-                                      ],
-                                      onSubmitted: (value) {
-                                        rename(value);
-                                        Flyout.of(context).close();
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ))
-              ]),
-            ]),
-          ),
-        biggerSpacer,
         // TABELLA
         if (!noFile && data != null && data!.isNotEmpty && (currentUfficioIndex != 0 || currentUfficioIndex != Manager.uffici.length - 1))
           Card(
@@ -314,6 +354,8 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                                 width = 250;
                                 break;
                             }
+
+                            /// The DataColumn widget is used to define the columns of the DataTable.
                             return mat.DataColumn(
                               label: SizedBox(
                                 width: width,
@@ -325,6 +367,10 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                         rows: List<mat.DataRow>.generate(
                           ufficio.entries.length,
                           (index) => mat.DataRow(
+                            color: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+                              if (highlightedErrorIndex == index) return Colors.red.withOpacity(.2);
+                              return null;
+                            }),
                             cells: List<mat.DataCell>.generate(ufficio.entries[index].length, (i) {
                               double width = 100;
 
@@ -339,6 +385,8 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                                   width = 250;
                                   break;
                               }
+
+                              /// The DataCell widget is used to define the cells of the DataTable.
                               return mat.DataCell(
                                 SizedBox(
                                   width: width,
@@ -347,10 +395,7 @@ class _ExcelScreenState extends State<ExcelScreen> with PageMixin {
                                     style: const TooltipThemeData(
                                       waitDuration: Duration.zero,
                                     ),
-                                    child: GestureDetector(
-                                      onTap: () => copyToClipboard(ufficio.entries[index][i]),
-                                      onSecondaryTap: () => copyToClipboard(ufficio.entries[index][i]),
-                                      child: Text(ufficio.entries[index][i], maxLines: 1, textAlign: TextAlign.center)),
+                                    child: GestureDetector(onTap: () => copyToClipboard(ufficio.entries[index][i]), onSecondaryTap: () => copyToClipboard(ufficio.entries[index][i]), child: Text(ufficio.entries[index][i], maxLines: 1, textAlign: TextAlign.center)),
                                   ),
                                 ),
                               );

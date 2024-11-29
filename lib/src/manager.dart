@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cross_file/cross_file.dart';
 import 'package:email_sender/enums.dart';
 import 'package:email_sender/screens/excel.dart';
+import 'package:email_sender/src/database.dart';
 import 'package:email_sender/theme.dart';
 import 'package:excel/excel.dart';
 import 'package:file_picker/file_picker.dart';
@@ -21,20 +22,19 @@ class Manager {
   static String sourceMail = 'daniele.mason@maggioli.it';
   static String sourceName = 'Daniele Mason';
   static String? sourcePassword;
-  
+
   static List<Ufficio> uffici = [];
-  
+
   static bool multiSelection = false;
   static List<Ufficio> selectedGroups = [];
   static List<Map<String, String>> extraRecipients = [];
-  
+
   static List<XFile> attachments = [];
-  
+
   static TextEditingController emailController = TextEditingController();
   static TextEditingController oggettoController = TextEditingController();
   static TextEditingController extraRecNameController = TextEditingController();
   static TextEditingController extraRecEmailController = TextEditingController();
-
 
   static Future<String> get lastDirectory async => excelPath != null ? removeFileNameFromPath(excelPath!) : (await getApplicationSupportDirectory()).path;
 
@@ -45,6 +45,8 @@ class Manager {
     oggettoController.clear();
     extraRecipients.clear();
     multiSelection = false;
+    infoBadge('/gruppi', null);
+    infoBadge('/email', null);
     setState();
   }
 
@@ -59,7 +61,7 @@ class Manager {
       final Ufficio? ufficio = await loadExcelSheet(file, i);
       if (ufficio != null) {
         uffici.add(ufficio);
-        print('Loaded ${ufficio.nome} with ${ufficio.entries.length} entries');
+        //print('Loaded ${ufficio.nome} with ${ufficio.entries.length} entries');
       }
     }
   }
@@ -181,10 +183,12 @@ class SettingsManager {
 
   static void clearSettings() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('settings', []);
+    await prefs.setStringList('settings', []);
     settings = {};
 
     Manager.excelPath = null;
+    await EmailDatabase().cleanDatabase();
+    await EmailDatabase().deleteDatabaseFile();
   }
 
   static bool _settingCheck(String? setting) => setting != null && setting != "" && setting != "null";

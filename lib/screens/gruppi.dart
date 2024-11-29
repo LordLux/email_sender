@@ -43,8 +43,7 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
     if (Manager.uffici.isEmpty) await Manager.loadExcel();
     if (Manager.uffici.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        infoBadge('/excel', true);
-        setState(() {});
+        checkEmails(Manager.uffici, context, () => setState(() {}));
       });
     }
   }
@@ -53,6 +52,13 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
   void initState() {
     super.initState();
     loadData();
+  }
+  
+  @override
+  void dispose() {
+    super.dispose();
+    Manager.extraRecNameController.dispose();
+    Manager.extraRecEmailController.dispose();
   }
 
   @override
@@ -257,7 +263,7 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                                           if (Manager.selectedGroups.isEmpty && Manager.extraRecipients.isEmpty) infoBadge("/gruppi", null);
                                           setState(() {});
                                         },
-                                      ),
+                                      ) ?? const SizedBox(),
                                   ]
                                 : [])),
                   ),
@@ -280,14 +286,19 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                           const SizedBox(height: 8),
                           TextFormBox(
                             controller: Manager.extraRecNameController,
-                            placeholder: 'Nome (opzionale)',
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) return 'Inserisci il nome del destinatario';
+                              print('value: "${value.trim()}", ${value.trim().length}');
+                              return null;
+                            },
+                            placeholder: 'Nome',
                           ),
                           const SizedBox(height: 8),
                           TextFormBox(
                             controller: Manager.extraRecEmailController,
                             placeholder: 'Email',
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Inserisci un\'email';
+                              if (value == null || value.trim().isEmpty) return 'Inserisci un\'email';
                               if (!EmailValidator.validate(value)) return 'Inserisci un\'email valida';
                               return null;
                             },
@@ -307,22 +318,31 @@ class _MailingListsState extends State<MailingLists> with PageMixin {
                                 onPressed: () {
                                   if (extraRecipientsFormKey.currentState!.validate()) {
                                     extraRecipientsFormKey.currentState!.save();
-                                    final String name = Manager.extraRecNameController.text.split(" ").map((e) => '${e[0].toUpperCase()}${e.substring(1)}').join(" ");
+                                    if (Manager.extraRecEmailController.text.trim().isEmpty) return;
+                                    try {
+                                      final String name;
+                                      if (Manager.extraRecNameController.text.length > 2)
+                                        name = Manager.extraRecNameController.text.split(" ").map((e) => '${e[0].toUpperCase()}${e.substring(1)}').join(" ");
+                                      else
+                                        name = Manager.extraRecNameController.text.titleCase;
 
-                                    final Map<String, String> extraRec = {
-                                      'name': name,
-                                      'email': Manager.extraRecEmailController.text.trim(),
-                                    };
+                                      final Map<String, String> extraRec = {
+                                        'name': name,
+                                        'email': Manager.extraRecEmailController.text.trim(),
+                                      };
 
-                                    // Check if the email is already in the list
-                                    final existingRecIndex = Manager.extraRecipients.indexWhere((rec) => rec['email'] == extraRec['email']);
-                                    if (existingRecIndex != -1) {
-                                      // If the name is different, update it
-                                      if (Manager.extraRecipients[existingRecIndex]['name'] != extraRec['name']) //
-                                        Manager.extraRecipients[existingRecIndex] = extraRec;
-                                    } else // Otherwise, add the new recipient
-                                      Manager.extraRecipients.add(extraRec);
-
+                                      // Check if the email is already in the list
+                                      final existingRecIndex = Manager.extraRecipients.indexWhere((rec) => rec['email'] == extraRec['email']);
+                                      if (existingRecIndex != -1) {
+                                        // If the name is different, update it
+                                        if (Manager.extraRecipients[existingRecIndex]['name'] != extraRec['name']) //
+                                          Manager.extraRecipients[existingRecIndex] = extraRec;
+                                      } else // Otherwise, add the new recipient
+                                        Manager.extraRecipients.add(extraRec);
+                                    } catch (e) {
+                                      print(e);
+                                      snackBar('Errore durante l\'aggiunta del destinatario:\n${e.toString()}', severity: InfoBarSeverity.error, hasError: true);
+                                    }
                                     /*snackBar(
                                     'Destinatario${name.isNotEmpty ? " $name " : " "}aggiunto con successo',
                                     severity: InfoBarSeverity.success,
